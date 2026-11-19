@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Timeline & Log — zit{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="font-size:22px; font-weight:700;">Commit Timeline & Graph</h1>
+    <p style="font-size:13px; color:var(--text-muted);">
+      Explore commit history, inspect visual branch topology, and examine commit diffs.
+    </p>
+  </div>
+  <form method="GET" action="{% url 'zit:timeline' %}" style="display:flex; gap:8px;">
+    <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Search commit message or author..." style="width:260px; font-size:12px;">
+    <button type="submit" class="btn btn-sm">Search</button>
+    {% if search_query %}
+      <a href="{% url 'zit:timeline' %}" class="btn btn-sm">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- ASCII Git Graph Toggle -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header" style="cursor:pointer;" onclick="toggleGraph()">
+    <h3 class="card-title" style="font-size:13px;">
+      <span>📊 Visual Commit Graph (git log --graph)</span>
+    </h3>
+    <span id="graphToggleIcon" style="font-size:12px; color:var(--text-muted);">▼ Click to expand/collapse</span>
+  </div>
+  <div id="graphContainer" class="card-body" style="padding:10px; background:var(--bg-primary); display:block;">
+    <pre class="font-mono" style="font-size:11px; line-height:1.4; color:var(--accent-cyan); overflow-x:auto;">{{ graph_text }}</pre>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Left Column: Commits List -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">📜 History ({{ commits|length }} commits)</h3>
+    </div>
+    <div class="card-body" style="padding:0; max-height:600px; overflow-y:auto;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Commit</th>
+            <th>Message</th>
+            <th>Author</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in commits %}
+            <tr style="cursor:pointer; {% if selected_hash == c.hash or forloop.first and not selected_hash %}background:rgba(56,139,253,0.1);{% endif %}" onclick="window.location.href='?commit={{ c.hash }}{% if search_query %}&q={{ search_query }}{% endif %}'">
+              <td>
+                <span class="font-mono" style="color:var(--accent-blue); font-weight:600; font-size:12px;">
+                  {{ c.short_hash }}
+                </span>
+              </td>
+              <td>
+                <span style="font-size:12px;">{{ c.subject|truncatechars:40 }}</span>
+                {% if c.decorations %}
+                  <span class="badge badge-branch" style="font-size:10px;">{{ c.decorations }}</span>
+                {% endif %}
+              </td>
+              <td style="color:var(--text-muted); font-size:11px;">{{ c.author_name }}</td>
+              <td style="color:var(--text-dim); font-size:11px; white-space:nowrap;">{{ c.relative_date }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Right Column: Selected Commit Details & Diff -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">🔍 Commit Inspection</h3>
+      {% if commit_detail %}
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-sm" onclick="runGitAction('reset_soft', {target: '{{ commit_detail.commit.hash }}'})" title="Soft reset to this commit">Soft Reset</button>
+          <button class="btn btn-sm" onclick="runGitAction('create_branch', {name: 'branch-at-{{ commit_detail.commit.short_hash }}', start_point: '{{ commit_detail.commit.hash }}'})" title="Create branch here">Branch Here</button>
+        </div>
+      {% endif %}
+    </div>
+    <div class="card-body" style="max-height:600px; overflow-y:auto;">
+      {% if commit_detail %}
+        <div style="margin-bottom:14px; border-bottom:1px solid var(--border-color); padding-bottom:12px;">
+          <h2 style="font-size:16px; font-weight:700; color:var(--text-main); margin-bottom:6px;">
+            {{ commit_detail.commit.subject }}
+          </h2>
+          <div style="font-size:12px; color:var(--text-muted); display:flex; flex-direction:column; gap:2px;">
+            <div>Author: <strong>{{ commit_detail.commit.author_name }}</strong> &lt;{{ commit_detail.commit.author_email }}&gt;</div>
+            <div>Date: {{ commit_detail.commit.relative_date }}</div>
+            <div class="font-mono" style="color:var(--accent-cyan); font-size:11px;">SHA: {{ commit_detail.commit.hash }}</div>
+          </div>
+          {% if commit_detail.commit.body and commit_detail.commit.body != commit_detail.commit.subject %}
+            <div style="margin-top:10px; background:var(--bg-primary); padding:8px 10px; border-radius:var(--radius-sm); font-size:12px; white-space:pre-wrap;">{{ commit_detail.commit.body }}</div>
+          {% endif %}
+        </div>
+
+        {% if commit_detail.diffstat %}
+          <div style="margin-bottom:14px;">
+            <div style="font-size:11px; font-weight:600; text-transform:uppercase; color:var(--text-dim); margin-bottom:4px;">Changed Files:</div>
+            <pre class="font-mono" style="font-size:11px; background:var(--bg-primary); padding:8px; border-radius:var(--radius-sm); overflow-x:auto;">{{ commit_detail.diffstat }}</pre>
+          </div>
+        {% endif %}
+
+        <div>
+          <div style="font-size:11px; font-weight:600; text-transform:uppercase; color:var(--text-dim); margin-bottom:8px;">Diff:</div>
+          {% for fd in commit_detail.diffs %}
+            <div class="diff-container" style="margin-bottom:10px;">
+              <div class="diff-file-header" style="font-size:11px;">
+                <span>{{ fd.path }}</span>
+                <span><span style="color:var(--accent-green-bright);">+{{ fd.additions }}</span> <span style="color:var(--accent-red);">-{{ fd.deletions }}</span></span>
+              </div>
+              {% for hunk in fd.hunks %}
+                <div class="diff-lines" style="font-size:11px;">
+                  {% for l in hunk.lines %}
+                    <div class="diff-line diff-line-{{ l.line_type }}">
+                      <span>{{ l.content }}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="padding:40px; text-align:center; color:var(--text-dim);">
+          Select a commit to view details and diffs.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleGraph() {
+  const container = document.getElementById('graphContainer');
+  const icon = document.getElementById('graphToggleIcon');
+  if (container.style.display === 'none') {
+    container.style.display = 'block';
+    icon.textContent = '▼ Click to collapse';
+  } else {
+    container.style.display = 'none';
+    icon.textContent = '▶ Click to expand';
+  }
+}
+</script>
+{% endblock %}

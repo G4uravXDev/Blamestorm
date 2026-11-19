@@ -1,0 +1,33 @@
+<div id="repoModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="card-title">📂 Switch Active Repository</h3>
+      <button class="btn btn-sm" onclick="closeModal('repoModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">
+        Zit can manage any local Git repository on your machine. Enter the absolute or relative folder path:
+      </p>
+      <div class="form-group">
+        <label class="form-label">Repository Directory Path</label>
+        <input type="text" id="repoPathInput" class="form-control font-mono" value="{{ current_repo_path }}" placeholder="e.g. C:\projects\my-repo or /home/user/code/my-repo">
+      </div>
+      <div style="font-size:12px; color:var(--text-dim);">
+        Current repository: <code>{{ current_repo_path }}</code>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeModal('repoModal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitRepoSwitch()">Switch Repository</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function submitRepoSwitch() {
+  const path = document.getElementById('repoPathInput').value.trim();
+  if (path) {
+    switchRepository(path);
+  }
+}
+</script>

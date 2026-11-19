@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Workflow Builder — zit{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="font-size:22px; font-weight:700;">Workflow Builder</h1>
+    <p style="font-size:13px; color:var(--text-muted);">
+      Design GitHub Actions CI/CD workflows visually, generate production-ready YAML, and execute Git Ops automations.
+    </p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <button class="btn btn-primary btn-sm" onclick="saveWorkflowToRepo()">💾 Save to .github/workflows/</button>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Left Side: Interactive Workflow Designer -->
+  <div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <h3 class="card-title">⚙️ Workflow Configuration</h3>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Workflow Name</label>
+          <input type="text" id="wfName" class="form-control font-mono" value="ci" oninput="regenerateYaml()">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Trigger Events (on:)</label>
+          <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:4px;">
+            <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
+              <input type="checkbox" id="trigPush" checked onchange="regenerateYaml()"> push
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
+              <input type="checkbox" id="trigPr" checked onchange="regenerateYaml()"> pull_request
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
+              <input type="checkbox" id="trigDispatch" onchange="regenerateYaml()"> workflow_dispatch (manual)
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
+              <input type="checkbox" id="trigSchedule" onchange="regenerateYaml()"> schedule (cron)
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer;">
+              <input type="checkbox" id="trigRelease" onchange="regenerateYaml()"> release
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Steps & Actions List -->
+    <div class="card">
+      <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 class="card-title">🧩 Pipeline Steps</h3>
+        <button class="btn btn-sm" onclick="addStepPrompt()">+ Add Step</button>
+      </div>
+      <div class="card-body" id="stepsContainer" style="display:flex; flex-direction:column; gap:8px;">
+        <!-- Dynamically rendered steps -->
+      </div>
+    </div>
+
+    <!-- Common Git Ops Recipes -->
+    <div class="card" style="margin-top:16px;">
+      <div class="card-header">
+        <h3 class="card-title">🚀 Git Ops Recipes</h3>
+      </div>
+      <div class="card-body" style="display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--bg-primary); border-radius:var(--radius-sm);">
+          <div>
+            <strong>Feature Branch Workflow</strong>
+            <div style="font-size:11px; color:var(--text-dim);">checkout -b &gt; stage &gt; commit &gt; push</div>
+          </div>
+          <button class="btn btn-sm" onclick="runFeatureRecipe()">Run</button>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--bg-primary); border-radius:var(--radius-sm);">
+          <div>
+            <strong>Sync with Upstream</strong>
+            <div style="font-size:11px; color:var(--text-dim);">fetch upstream &gt; merge &gt; push origin</div>
+          </div>
+          <button class="btn btn-sm" onclick="runGitAction('git_sync')">Run</button>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--bg-primary); border-radius:var(--radius-sm);">
+          <div>
+            <strong>Undo Last Commit Safely</strong>
+            <div style="font-size:11px; color:var(--text-dim);">git reset --soft HEAD~1</div>
+          </div>
+          <button class="btn btn-sm" onclick="runGitAction('reset_soft', {target: 'HEAD~1'})">Run</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Real-time Generated YAML -->
+  <div>
+    <div class="card">
+      <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 class="card-title">📄 Real-Time Generated YAML</h3>
+        <button class="btn btn-sm" onclick="copyYaml()">📋 Copy</button>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <textarea id="yamlOutput" rows="28" class="form-control font-mono" style="border:none; border-radius:0; font-size:12px; line-height:1.4; background:#0d1117; color:#7ee787; resize:vertical;"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let pipelineSteps = [
+  { id: 1, name: "Checkout repository", uses: "actions/checkout@v4", run: "" },
+  { id: 2, name: "Set up Python", uses: "actions/setup-python@v5", run: "" },
+  { id: 3, name: "Install dependencies", uses: "", run: "pip install -r requirements.txt" },
+  { id: 4, name: "Run test suite", uses: "", run: "python manage.py test" }
+];
+
+function renderSteps() {
+  const container = document.getElementById('stepsContainer');
+  container.innerHTML = '';
+  pipelineSteps.forEach((s, idx) => {
+    const el = document.createElement('div');
+    el.style = 'background:var(--bg-card); border:1px solid var(--border-color); border-radius:4px; padding:10px; display:flex; justify-content:space-between; align-items:center;';
+    el.innerHTML = `
+      <div>
+        <div style="font-size:13px; font-weight:600;">${idx+1}. ${s.name}</div>
+        <div class="font-mono" style="font-size:11px; color:var(--accent-cyan);">
+          ${s.uses ? 'uses: ' + s.uses : 'run: ' + s.run}
+        </div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="removeStep(${s.id})">✕</button>
+    `;
+    container.appendChild(el);
+  });
+  regenerateYaml();
+}
+
+function addStepPrompt() {
+  const name = prompt('Step name:', 'Build application');
+  if (!name) return;
+  const isAction = confirm('Is this an existing GitHub Action (OK) or a shell run command (Cancel)?');
+  let uses = '', run = '';
+  if (isAction) {
+    uses = prompt('Action uses (e.g. actions/setup-node@v4):', 'actions/setup-node@v4') || '';
+  } else {
+    run = prompt('Shell command (e.g. npm test):', 'npm test') || '';
+  }
+
+  pipelineSteps.push({
+    id: Date.now(),
+    name: name,
+    uses: uses,
+    run: run
+  });
+  renderSteps();
+}
+
+function removeStep(id) {
+  pipelineSteps = pipelineSteps.filter(s => s.id !== id);
+  renderSteps();
+}
+
+function regenerateYaml() {
+  const name = document.getElementById('wfName').value.trim() || 'ci';
+  const trigPush = document.getElementById('trigPush').checked;
+  const trigPr = document.getElementById('trigPr').checked;
+  const trigDispatch = document.getElementById('trigDispatch').checked;
+  const trigSchedule = document.getElementById('trigSchedule').checked;
+  const trigRelease = document.getElementById('trigRelease').checked;
+
+  let lines = [];
+  lines.push(`name: ${name}`);
+  lines.push('');
+  lines.push('on:');
+  if (trigPush) {
+    lines.push('  push:');
+    lines.push('    branches: [ main, master ]');
+  }
+  if (trigPr) {
+    lines.push('  pull_request:');
+    lines.push('    branches: [ main, master ]');
+  }
+  if (trigDispatch) lines.push('  workflow_dispatch:');
+  if (trigSchedule) {
+    lines.push('  schedule:');
+    lines.push("    - cron: '0 0 * * *'");
+  }
+  if (trigRelease) {
+    lines.push('  release:');
+    lines.push('    types: [ published ]');
+  }
+
+  lines.push('');
+  lines.push('jobs:');
+  lines.push('  build:');
+  lines.push('    runs-on: ubuntu-latest');
+  lines.push('    steps:');
+
+  pipelineSteps.forEach(s => {
+    lines.push(`      - name: ${s.name}`);
+    if (s.uses) {
+      lines.push(`        uses: ${s.uses}`);
+    } else if (s.run) {
+      lines.push(`        run: ${s.run}`);
+    }
+  });
+
+  document.getElementById('yamlOutput').value = lines.join('\n') + '\n';
+}
+
+function copyYaml() {
+  const yaml = document.getElementById('yamlOutput').value;
+  navigator.clipboard.writeText(yaml);
+  showToast('Workflow YAML copied to clipboard', 'success');
+}
+
+async function saveWorkflowToRepo() {
+  const name = document.getElementById('wfName').value.trim() || 'ci';
+  const yaml = document.getElementById('yamlOutput').value;
+
+  try {
+    const res = await fetch('/api/save-workflow/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, yaml_content: yaml })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Workflow saved to ' + data.path, 'success');
+    } else {
+      showToast(data.error || 'Failed to save workflow', 'danger');
+    }
+  } catch (err) {
+    showToast('Error saving workflow: ' + err, 'danger');
+  }
+}
+
+function runFeatureRecipe() {
+  const name = prompt('Enter new feature branch name:', 'feature/awesome-tool');
+  if (name) {
+    runGitAction('create_branch', { name: name, checkout: true });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', renderSteps);
+</script>
+{% endblock %}

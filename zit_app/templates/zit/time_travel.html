@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Time Travel — zit{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px;">
+  <h1 style="font-size:22px; font-weight:700;">Time Travel & Safe Reset</h1>
+  <p style="font-size:13px; color:var(--text-muted);">
+    Safely undo commits, reset working tree states, restore individual files, and manage release tags.
+  </p>
+</div>
+
+<div class="grid-2">
+  <!-- Left Side: Reset Operations with Safety Labels -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">⏳ Safe Reset Actions</h3>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Target Revision</label>
+          <input type="text" id="resetTarget" class="form-control font-mono" value="HEAD~1" placeholder="HEAD~1 or commit SHA or branch name">
+          <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">
+            Defaults to previous commit (<code>HEAD~1</code>).
+          </div>
+        </div>
+
+        <!-- 3 Modes of Reset -->
+        <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px;">
+          <!-- Soft Reset -->
+          <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-sm); padding:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <strong>Soft Reset (keep staged)</strong>
+              <span class="badge" style="background:rgba(63,185,80,0.15); color:var(--accent-green-bright); border:1px solid var(--accent-green);">SAFE</span>
+            </div>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">
+              Moves HEAD to the target revision. Keeps all changes in the staging area. Zero work is lost.
+            </p>
+            <button class="btn btn-sm" onclick="runReset('reset_soft')">Execute Soft Reset</button>
+          </div>
+
+          <!-- Mixed Reset -->
+          <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-sm); padding:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <strong>Mixed Reset (unstage)</strong>
+              <span class="badge" style="background:rgba(56,139,253,0.15); color:var(--accent-blue); border:1px solid var(--accent-blue);">SAFE</span>
+            </div>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">
+              Moves HEAD to target revision and resets staging area. Preserves all changes in your working directory.
+            </p>
+            <button class="btn btn-sm" onclick="runReset('reset_mixed')">Execute Mixed Reset</button>
+          </div>
+
+          <!-- Hard Reset -->
+          <div style="background:rgba(248,81,73,0.05); border:1px solid var(--accent-red); border-radius:var(--radius-sm); padding:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <strong style="color:var(--accent-red);">Hard Reset (discard changes)</strong>
+              <span class="badge" style="background:rgba(248,81,73,0.15); color:var(--accent-red); border:1px solid var(--accent-red);">DESTRUCTIVE</span>
+            </div>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">
+              Resets index and working tree. Any uncommitted changes since target revision are permanently discarded!
+            </p>
+            <button class="btn btn-danger btn-sm" onclick="runHardReset()">Execute Hard Reset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Restore Single File -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">📄 Restore Single File</h3>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">File Path</label>
+          <input type="text" id="restoreFilePath" class="form-control font-mono" placeholder="e.g. src/main.rs or app/models.py">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Source Revision (Optional)</label>
+          <input type="text" id="restoreSource" class="form-control font-mono" value="HEAD" placeholder="HEAD or commit SHA">
+        </div>
+        <button class="btn btn-sm" onclick="runRestoreFile()">Restore File</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Recent Targets & Tag Management -->
+  <div>
+    <!-- Clean Untracked -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <h3 class="card-title">🧹 Clean Untracked Files</h3>
+      </div>
+      <div class="card-body">
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
+          Runs <code>git clean -fd</code> to forcefully remove all untracked files and directories.
+        </p>
+        <button class="btn btn-danger btn-sm" onclick="if(confirm('Permanently delete all untracked files?')) runGitAction('clean_untracked')">
+          Clean Untracked Files (-fd)
+        </button>
+      </div>
+    </div>
+
+    <!-- Tag Management -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">🏷️ Git Tags</h3>
+        <button class="btn btn-primary btn-sm" onclick="openModal('createTagModal')">+ Create Tag</button>
+      </div>
+      <div class="card-body" style="padding:0;">
+        {% if tags %}
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tag</th>
+                <th>Target SHA</th>
+                <th>Message</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in tags %}
+                <tr>
+                  <td><strong class="font-mono" style="color:var(--accent-purple);">{{ t.name }}</strong></td>
+                  <td class="font-mono" style="font-size:11px; color:var(--accent-cyan);">{{ t.commit_hash }}</td>
+                  <td style="font-size:12px; color:var(--text-muted);">{{ t.message|default:"—" }}</td>
+                  <td>
+                    <button class="btn btn-danger btn-sm" onclick="if(confirm('Delete tag {{ t.name }}?')) runGitAction('delete_tag', {name: '{{ t.name }}'})">Delete</button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div style="padding:20px; text-align:center; color:var(--text-dim); font-size:13px;">
+            No tags found in this repository.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Tag Modal -->
+<div id="createTagModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="card-title">🏷️ Create Tag</h3>
+      <button class="btn btn-sm" onclick="closeModal('createTagModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Tag Name</label>
+        <input type="text" id="newTagName" class="form-control font-mono" placeholder="v1.0.0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Annotation Message (Optional)</label>
+        <input type="text" id="newTagMsg" class="form-control" placeholder="Release v1.0.0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Target Commit SHA (Optional)</label>
+        <input type="text" id="newTagCommit" class="form-control font-mono" placeholder="HEAD">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeModal('createTagModal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitCreateTag()">Create Tag</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function runReset(action) {
+  const target = document.getElementById('resetTarget').value.trim() || 'HEAD~1';
+  if (confirm(`Run ${action} to '${target}'?`)) {
+    runGitAction(action, { target: target });
+  }
+}
+
+function runHardReset() {
+  const target = document.getElementById('resetTarget').value.trim() || 'HEAD~1';
+  if (confirm(`⚠️ DANGER: Hard reset will PERMANENTLY delete all uncommitted changes. Proceed to reset to '${target}'?`)) {
+    runGitAction('reset_hard', { target: target });
+  }
+}
+
+function runRestoreFile() {
+  const path = document.getElementById('restoreFilePath').value.trim();
+  const source = document.getElementById('restoreSource').value.trim() || 'HEAD';
+  if (!path) {
+    showToast('Please specify a file path', 'warning');
+    return;
+  }
+  if (confirm(`Restore '${path}' from '${source}'?`)) {
+    runGitAction('restore_file', { path: path, source: source });
+  }
+}
+
+function submitCreateTag() {
+  const name = document.getElementById('newTagName').value.trim();
+  const msg = document.getElementById('newTagMsg').value.trim();
+  const commit = document.getElementById('newTagCommit').value.trim();
+  if (!name) {
+    showToast('Tag name is required', 'warning');
+    return;
+  }
+  runGitAction('create_tag', { name: name, message: msg || null, commit: commit || null });
+}
+</script>
+{% endblock %}

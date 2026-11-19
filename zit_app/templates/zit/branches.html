@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Branches — zit{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="font-size:22px; font-weight:700;">Visual Branch Manager</h1>
+    <p style="font-size:13px; color:var(--text-muted);">
+      Create, switch, delete, rename, and merge local and remote git branches.
+    </p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <button class="btn btn-primary btn-sm" onclick="openModal('createBranchModal')">🌿 New Branch</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">
+      Active Branch: <span style="color:var(--accent-blue); font-family:var(--font-mono);">{{ current_branch }}</span>
+    </h3>
+  </div>
+  <div class="card-body" style="padding:0;">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Branch Name</th>
+          <th>Type</th>
+          <th>Tracking Upstream</th>
+          <th>Latest Commit</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in branches %}
+          <tr {% if b.is_current %}style="background:rgba(56,139,253,0.08);"{% endif %}>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                {% if b.is_current %}
+                  <span style="color:var(--accent-green-bright); font-weight:bold;">●</span>
+                {% else %}
+                  <span style="color:var(--text-dim);">○</span>
+                {% endif %}
+                <span class="font-mono" style="font-weight:{% if b.is_current %}700{% else %}500{% endif %}; color:{% if b.is_current %}var(--accent-blue){% else %}var(--text-main){% endif %};">
+                  {{ b.name }}
+                </span>
+                {% if b.is_current %}
+                  <span class="badge badge-branch">current</span>
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              {% if b.is_remote %}
+                <span class="badge" style="background:rgba(210,153,34,0.15); color:var(--accent-yellow);">remote</span>
+              {% else %}
+                <span class="badge" style="background:rgba(56,139,253,0.15); color:var(--accent-blue);">local</span>
+              {% endif %}
+            </td>
+            <td class="font-mono" style="font-size:12px; color:var(--text-muted);">
+              {{ b.upstream|default:"—" }}
+            </td>
+            <td>
+              <span class="font-mono" style="font-size:11px; color:var(--accent-cyan);">{{ b.commit_hash }}</span>
+              <span style="font-size:12px; color:var(--text-muted); margin-left:6px;">{{ b.subject|truncatechars:45 }}</span>
+            </td>
+            <td>
+              <div style="display:flex; gap:6px;">
+                {% if not b.is_current %}
+                  <button class="btn btn-sm" onclick="runGitAction('switch_branch', {name: '{{ b.name }}'})" title="Checkout this branch">Switch</button>
+                  <button class="btn btn-sm" onclick="promptMerge('{{ b.name }}')" title="Merge into {{ current_branch }}">Merge</button>
+                  <button class="btn btn-sm" onclick="promptRename('{{ b.name }}')" title="Rename branch">Rename</button>
+                  <button class="btn btn-danger btn-sm" onclick="promptDelete('{{ b.name }}', {{ b.is_remote|yesno:'true,false' }})" title="Delete branch">Delete</button>
+                {% else %}
+                  <button class="btn btn-sm" onclick="promptRename('{{ b.name }}')" title="Rename current branch">Rename</button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Create Branch Modal -->
+<div id="createBranchModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="card-title">🌿 Create New Branch</h3>
+      <button class="btn btn-sm" onclick="closeModal('createBranchModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Branch Name</label>
+        <input type="text" id="newBranchName" class="form-control font-mono" placeholder="feature/user-auth or fix/issue-123">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Base Commit / Branch (Optional)</label>
+        <input type="text" id="newBranchBase" class="form-control font-mono" placeholder="HEAD or main or commit SHA">
+      </div>
+      <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" id="checkoutAfterCreate" checked>
+        <label for="checkoutAfterCreate" style="font-size:13px; cursor:pointer;">Switch to new branch immediately</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeModal('createBranchModal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitCreateBranch()">Create Branch</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function submitCreateBranch() {
+  const name = document.getElementById('newBranchName').value.trim();
+  const base = document.getElementById('newBranchBase').value.trim();
+  const checkout = document.getElementById('checkoutAfterCreate').checked;
+
+  if (!name) {
+    showToast('Branch name is required', 'warning');
+    return;
+  }
+  runGitAction('create_branch', { name: name, start_point: base || null, checkout: checkout });
+}
+
+function promptRename(oldName) {
+  const newName = prompt(`Rename branch '${oldName}' to:`, oldName);
+  if (newName && newName.trim() && newName.trim() !== oldName) {
+    runGitAction('rename_branch', { old_name: oldName, new_name: newName.trim() });
+  }
+}
+
+function promptDelete(name, isRemote) {
+  if (confirm(`Are you sure you want to delete ${isRemote ? 'remote' : 'local'} branch '${name}'?`)) {
+    runGitAction('delete_branch', { name: name, force: false, is_remote: isRemote }).then(data => {
+      if (data && !data.success && data.stderr && data.stderr.includes('not fully merged')) {
+        if (confirm(`Branch '${name}' is not fully merged. Force delete with -D?`)) {
+          runGitAction('delete_branch', { name: name, force: true, is_remote: isRemote });
+        }
+      }
+    });
+  }
+}
+
+function promptMerge(branchName) {
+  if (confirm(`Merge '${branchName}' into current branch '{{ current_branch }}'?`)) {
+    runGitAction('merge_branch', { name: branchName });
+  }
+}
+</script>
+{% endblock %}

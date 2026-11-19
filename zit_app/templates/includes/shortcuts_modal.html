@@ -1,0 +1,107 @@
+<div id="shortcutsModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="card-title">⌨️ Keyboard Shortcuts</h3>
+      <button class="btn btn-sm" onclick="closeModal('shortcutsModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
+        Blamestorm provides lightning-fast single-key navigation across all views, matching terminal TUI keybindings.
+      </p>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>View / Action</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><kbd>s</kbd></td>
+            <td><strong>Staging</strong></td>
+            <td>Interactive staging with unified diffs & hunk toggles</td>
+          </tr>
+          <tr>
+            <td><kbd>c</kbd></td>
+            <td><strong>Commit</strong></td>
+            <td>Conventional commit editor & AI message generation</td>
+          </tr>
+          <tr>
+            <td><kbd>b</kbd></td>
+            <td><strong>Branches</strong></td>
+            <td>List, create, switch, delete, and merge branches</td>
+          </tr>
+          <tr>
+            <td><kbd>l</kbd></td>
+            <td><strong>Log / Timeline</strong></td>
+            <td>Visual commit graph and commit history inspection</td>
+          </tr>
+          <tr>
+            <td><kbd>t</kbd></td>
+            <td><strong>Time Travel</strong></td>
+            <td>Safe reset (soft/mixed/hard) and restore operations</td>
+          </tr>
+          <tr>
+            <td><kbd>r</kbd></td>
+            <td><strong>Reflog</strong></td>
+            <td>Recover lost commits and accidental resets</td>
+          </tr>
+          <tr>
+            <td><kbd>x</kbd></td>
+            <td><strong>Stash</strong></td>
+            <td>Save, pop, apply, drop, and inspect stashes</td>
+          </tr>
+          <tr>
+            <td><kbd>m</kbd></td>
+            <td><strong>Merge Resolve</strong></td>
+            <td>Resolve conflicts with ours/theirs or Gemini AI</td>
+          </tr>
+          <tr>
+            <td><kbd>B</kbd></td>
+            <td><strong>Bisect</strong></td>
+            <td>Binary search for bug-introducing commits</td>
+          </tr>
+          <tr>
+            <td><kbd>p</kbd></td>
+            <td><strong>Cherry Pick</strong></td>
+            <td>Pick individual commits from other branches</td>
+          </tr>
+          <tr>
+            <td><kbd>w</kbd></td>
+            <td><strong>Workflow Builder</strong></td>
+            <td>Visual GitHub Actions CI/CD designer</td>
+          </tr>
+          <tr>
+            <td><kbd>g</kbd></td>
+            <td><strong>GitHub</strong></td>
+            <td>Remote sync, push, pull, PRs, and Actions</td>
+          </tr>
+          <tr>
+            <td><kbd>a</kbd></td>
+            <td><strong>AI Mentor</strong></td>
+            <td>Explain repo, ask git questions, and diagnose errors</td>
+          </tr>
+          <tr>
+            <td><kbd>A</kbd></td>
+            <td><strong>Agent Mode</strong></td>
+            <td>Autonomous AI conversational Git ops executor</td>
+          </tr>
+          <tr>
+            <td><kbd>?</kbd></td>
+            <td><strong>Help</strong></td>
+            <td>Open this keyboard shortcuts cheat-sheet</td>
+          </tr>
+          <tr>
+            <td><kbd>Esc</kbd></td>
+            <td><strong>Close Modal</strong></td>
+            <td>Close active modal dialog or blur inputs</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-sm" onclick="closeModal('shortcutsModal')">Got it</button>
+    </div>
+  </div>
+</div>

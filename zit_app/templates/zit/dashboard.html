@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — zit{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="font-size:22px; font-weight:700; display:flex; align-items:center; gap:10px;">
+      Repository Dashboard
+      {% if status %}
+        {% if status.is_clean %}
+          <span class="badge badge-clean">✓ Working tree clean</span>
+        {% else %}
+          <span class="badge badge-dirty">● {{ status.total_changed_files }} uncommitted changes</span>
+        {% endif %}
+      {% endif %}
+    </h1>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:2px;">
+      At-a-glance repository overview and quick git operations.
+    </p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <button class="btn btn-sm" onclick="runGitAction('git_fetch')" title="Fetch all remotes">🔄 Fetch</button>
+    <button class="btn btn-sm" onclick="runGitAction('git_pull')" title="Pull from tracking branch">⬇️ Pull</button>
+    <button class="btn btn-primary btn-sm" onclick="runGitAction('git_push')" title="Push to tracking branch">⬆️ Push</button>
+    <a href="{% url 'zit:agent' %}" class="btn btn-blue btn-sm" title="Launch Autonomous Agent (A)">⚡ Launch Agent</a>
+  </div>
+</div>
+
+{% if status %}
+<!-- Metric Cards Grid -->
+<div class="grid-4" style="margin-bottom: 20px;">
+  <div class="metric-box">
+    <div class="metric-label">Current Branch</div>
+    <div class="metric-value" style="color:var(--accent-blue); font-size:17px; overflow:hidden; text-overflow:ellipsis;">
+      {{ status.branch }}
+    </div>
+    <div style="font-size:11px; color:var(--text-dim);">
+      {% if status.upstream %}
+        Tracking {{ status.upstream }}
+      {% else %}
+        No remote upstream configured
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="metric-box">
+    <div class="metric-label">Ahead / Behind</div>
+    <div class="metric-value" style="font-size:17px;">
+      <span style="color:var(--accent-green-bright);">+{{ status.ahead }}</span> / 
+      <span style="color:var(--accent-red);">-{{ status.behind }}</span>
+    </div>
+    <div style="font-size:11px; color:var(--text-dim);">
+      Commits relative to remote
+    </div>
+  </div>
+
+  <div class="metric-box">
+    <div class="metric-label">Staged Files</div>
+    <div class="metric-value" style="color:var(--accent-green-bright); font-size:17px;">
+      {{ status.staged|length }}
+    </div>
+    <div style="font-size:11px; color:var(--text-dim);">
+      Ready to commit (<a href="{% url 'zit:commit' %}">commit <kbd>c</kbd></a>)
+    </div>
+  </div>
+
+  <div class="metric-box">
+    <div class="metric-label">Working Tree Changes</div>
+    <div class="metric-value" style="color:var(--accent-yellow); font-size:17px;">
+      {{ status.unstaged|length }} mod / {{ status.untracked|length }} new
+    </div>
+    <div style="font-size:11px; color:var(--text-dim);">
+      <a href="{% url 'zit:staging' %}">Review in Staging <kbd>s</kbd></a>
+    </div>
+  </div>
+</div>
+
+{% if status.conflicts %}
+<div class="alert alert-danger" style="margin-bottom:20px;">
+  <div>
+    <strong>⚠️ Merge Conflicts Detected!</strong> There are {{ status.conflicts|length }} conflicted file(s) requiring resolution.
+  </div>
+  <a href="{% url 'zit:merge_resolve' %}" class="btn btn-danger btn-sm">Resolve Conflicts <kbd>m</kbd></a>
+</div>
+{% endif %}
+
+<div class="grid-sidebar">
+  <!-- Left Side: Quick Features & Navigation -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">⚡ Quick Navigation</h3>
+      </div>
+      <div class="card-body" style="display:flex; flex-direction:column; gap:8px;">
+        <a href="{% url 'zit:staging' %}" class="btn" style="justify-content:space-between;">
+          <span>📦 Staging & Diffs</span>
+          <kbd>s</kbd>
+        </a>
+        <a href="{% url 'zit:commit' %}" class="btn" style="justify-content:space-between;">
+          <span>✍️ Guided Commit</span>
+          <kbd>c</kbd>
+        </a>
+        <a href="{% url 'zit:branches' %}" class="btn" style="justify-content:space-between;">
+          <span>🌿 Branch Manager</span>
+          <kbd>b</kbd>
+        </a>
+        <a href="{% url 'zit:timeline' %}" class="btn" style="justify-content:space-between;">
+          <span>📜 Commit Log / Graph</span>
+          <kbd>l</kbd>
+        </a>
+        <a href="{% url 'zit:time_travel' %}" class="btn" style="justify-content:space-between;">
+          <span>⏳ Safe Reset / Time Travel</span>
+          <kbd>t</kbd>
+        </a>
+        <a href="{% url 'zit:reflog' %}" class="btn" style="justify-content:space-between;">
+          <span>🔄 Reflog Recovery</span>
+          <kbd>r</kbd>
+        </a>
+        <a href="{% url 'zit:stash' %}" class="btn" style="justify-content:space-between;">
+          <span>🗄️ Stash Manager</span>
+          <kbd>x</kbd>
+        </a>
+        <a href="{% url 'zit:merge_resolve' %}" class="btn" style="justify-content:space-between;">
+          <span>🔀 Merge & Conflicts</span>
+          <kbd>m</kbd>
+        </a>
+        <a href="{% url 'zit:bisect' %}" class="btn" style="justify-content:space-between;">
+          <span>🎯 Git Bisect Debugger</span>
+          <kbd>B</kbd>
+        </a>
+        <a href="{% url 'zit:cherry_pick' %}" class="btn" style="justify-content:space-between;">
+          <span>🍒 Cherry Pick</span>
+          <kbd>p</kbd>
+        </a>
+        <a href="{% url 'zit:workflow_builder' %}" class="btn" style="justify-content:space-between;">
+          <span>⚙️ Workflow Builder</span>
+          <kbd>w</kbd>
+        </a>
+        <a href="{% url 'zit:github' %}" class="btn" style="justify-content:space-between;">
+          <span>🐙 GitHub Integration</span>
+          <kbd>g</kbd>
+        </a>
+        <a href="{% url 'zit:ai_mentor' %}" class="btn btn-primary" style="justify-content:space-between; background:var(--bg-card); border-color:var(--accent-purple); color:var(--accent-purple);">
+          <span>🤖 AI Mentor</span>
+          <kbd>a</kbd>
+        </a>
+        <a href="{% url 'zit:agent' %}" class="btn btn-blue" style="justify-content:space-between; font-weight:700;">
+          <span>⚡ Autonomous Agent Mode</span>
+          <kbd>A</kbd>
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick Stash Box -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">🗄️ Quick Stash</h3>
+      </div>
+      <div class="card-body">
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">
+          Currently saved stashes: <strong>{{ status.stash_count }}</strong>
+        </p>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="quickStashMsg" class="form-control" placeholder="Stash message..." style="font-size:12px;">
+          <button class="btn btn-sm" onclick="saveQuickStash()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Recent Commits & Remotes -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">📜 Recent Commits on {{ status.branch }}</h3>
+        <a href="{% url 'zit:timeline' %}" class="btn btn-sm">View Full History <kbd>l</kbd></a>
+      </div>
+      <div class="card-body" style="padding:0;">
+        {% if recent_commits %}
+          <table class="table">
+            <thead>
+              <tr>
+                <th>SHA</th>
+                <th>Subject</th>
+                <th>Author</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in recent_commits %}
+                <tr>
+                  <td>
+                    <a href="{% url 'zit:timeline' %}?commit={{ c.hash }}" class="font-mono" style="color:var(--accent-blue); font-weight:600;">
+                      {{ c.short_hash }}
+                    </a>
+                  </td>
+                  <td>
+                    <span>{{ c.subject }}</span>
+                    {% if c.decorations %}
+                      <span class="badge badge-branch" style="font-size:10px;">{{ c.decorations }}</span>
+                    {% endif %}
+                  </td>
+                  <td style="color:var(--text-muted);">{{ c.author_name }}</td>
+                  <td style="color:var(--text-dim); white-space:nowrap;">{{ c.relative_date }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div style="padding:24px; text-align:center; color:var(--text-muted);">
+            No commits recorded in this repository yet.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Remotes Card -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">🌐 Configured Remotes</h3>
+        <a href="{% url 'zit:github' %}" class="btn btn-sm">Manage Remotes <kbd>g</kbd></a>
+      </div>
+      <div class="card-body">
+        {% if remotes %}
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Remote</th>
+                <th>Fetch URL</th>
+                <th>Push URL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in remotes %}
+                <tr>
+                  <td><strong>{{ r.name }}</strong></td>
+                  <td class="font-mono" style="font-size:12px; color:var(--text-muted);">{{ r.fetch_url }}</td>
+                  <td class="font-mono" style="font-size:12px; color:var(--text-muted);">{{ r.push_url }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p style="font-size:13px; color:var(--text-muted);">No remotes connected. You can link GitHub or any remote repository in the GitHub section.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script>
+function saveQuickStash() {
+  const msg = document.getElementById('quickStashMsg').value;
+  runGitAction('stash_save', { message: msg, include_untracked: true });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Stash Manager — zit{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="font-size:22px; font-weight:700;">Stash Manager</h1>
+    <p style="font-size:13px; color:var(--text-muted);">
+      Save uncommitted work temporarily without committing, inspect stash contents, and pop or apply stashes.
+    </p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    {% if stashes %}
+      <button class="btn btn-danger btn-sm" onclick="if(confirm('Drop ALL stashes permanently?')) runGitAction('stash_clear')">Clear All Stashes</button>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Left Column: Stashes List & Save New -->
+  <div>
+    <!-- Save Stash Form -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <h3 class="card-title">🗄️ Save to Stash</h3>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Stash Message (Optional)</label>
+          <input type="text" id="stashSaveMsg" class="form-control" placeholder="WIP on feature X...">
+        </div>
+        <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="stashIncludeUntracked" checked>
+          <label for="stashIncludeUntracked" style="font-size:13px; cursor:pointer;">Include untracked files (-u)</label>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="submitSaveStash()">Save Stash</button>
+      </div>
+    </div>
+
+    <!-- Existing Stashes -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Saved Stashes ({{ stashes|length }})</h3>
+      </div>
+      <div class="card-body" style="padding:0;">
+        {% if stashes %}
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Index</th>
+                <th>Message</th>
+                <th>Age</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in stashes %}
+                <tr {% if selected_idx == s.index|stringformat:"i" %}style="background:rgba(56,139,253,0.1);"{% endif %}>
+                  <td>
+                    <a href="?idx={{ s.index }}" class="font-mono" style="color:var(--accent-purple); font-weight:600;">
+                      {{ s.selector }}
+                    </a>
+                  </td>
+                  <td>
+                    <a href="?idx={{ s.index }}" style="font-size:12px; color:var(--text-main);">
+                      {{ s.message }}
+                    </a>
+                  </td>
+                  <td style="font-size:11px; color:var(--text-dim); white-space:nowrap;">
+                    {{ s.relative_date }}
+                  </td>
+                  <td>
+                    <div style="display:flex; gap:4px;">
+                      <button class="btn btn-sm" onclick="runGitAction('stash_pop', {index: {{ s.index }}})" title="Pop (apply & drop)">Pop</button>
+                      <button class="btn btn-sm" onclick="runGitAction('stash_apply', {index: {{ s.index }}})" title="Apply without removing">Apply</button>
+                      <button class="btn btn-danger btn-sm" onclick="if(confirm('Drop {{ s.selector }}?')) runGitAction('stash_drop', {index: {{ s.index }}})" title="Drop stash">Drop</button>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div style="padding:30px; text-align:center; color:var(--text-dim); font-size:13px;">
+            No saved stashes.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Stash Diff Inspection -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">🔍 Stash Content Preview</h3>
+      </div>
+      <div class="card-body" style="padding:0; max-height:600px; overflow-y:auto;">
+        {% if stash_diffs %}
+          {% for fd in stash_diffs %}
+            <div style="padding:8px 12px; background:var(--bg-card); border-bottom:1px solid var(--border-color); font-size:12px; font-weight:600;">
+              {{ fd.path }} <span style="color:var(--accent-green-bright);">(+{{ fd.additions }})</span> <span style="color:var(--accent-red);">(-{{ fd.deletions }})</span>
+            </div>
+            {% for hunk in fd.hunks %}
+              <div class="diff-lines" style="font-size:11px;">
+                {% for l in hunk.lines %}
+                  <div class="diff-line diff-line-{{ l.line_type }}">
+                    <span>{{ l.content }}</span>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endfor %}
+          {% endfor %}
+        {% else %}
+          <div style="padding:40px; text-align:center; color:var(--text-dim); font-size:13px;">
+            Click on a stash index to inspect its changed files and unified diffs.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function submitSaveStash() {
+  const msg = document.getElementById('stashSaveMsg').value.trim();
+  const untracked = document.getElementById('stashIncludeUntracked').checked;
+  runGitAction('stash_save', { message: msg || null, include_untracked: untracked });
+}
+</script>
+{% endblock %}

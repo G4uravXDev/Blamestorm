@@ -1,0 +1,52 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Blamestorm — AI Git Assistant{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/zit.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  {% include "includes/navbar.html" %}
+
+  <main class="zit-container">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
+          <span>{{ message }}</span>
+          <button type="button" class="btn btn-sm" onclick="this.parentElement.remove()">✕</button>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% if not repo_is_valid %}
+      <div class="alert alert-warning" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong>Not a Git Repository:</strong> The current directory <code>{{ current_repo_path }}</code> is not initialized as a git repository.
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="runGitAction('init_repo')">⚡ Initialize Git Here</button>
+          <button class="btn btn-blue btn-sm" onclick="openModal('repoModal')">📂 Select Existing Repo</button>
+        </div>
+      </div>
+    {% endif %}
+
+    {% block content %}
+    {% endblock %}
+  </main>
+
+  {% include "includes/footer.html" %}
+
+  {% include "includes/shortcuts_modal.html" %}
+  {% include "includes/repo_selector_modal.html" %}
+
+  <script src="{% static 'js/zit.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

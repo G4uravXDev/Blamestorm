@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Guided Commit — zit{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="font-size:22px; font-weight:700;">Guided Commit Editor</h1>
+    <p style="font-size:13px; color:var(--text-muted);">
+      Craft conventional commits, inspect staged stats, or generate smart commit messages with Gemini AI.
+    </p>
+  </div>
+  <div>
+    <a href="{% url 'zit:staging' %}" class="btn btn-sm">← Back to Staging <kbd>s</kbd></a>
+  </div>
+</div>
+
+{% if not status.staged %}
+<div class="alert alert-warning">
+  <div>
+    <strong>No staged changes!</strong> You cannot commit without staging changes first.
+  </div>
+  <a href="{% url 'zit:staging' %}" class="btn btn-primary btn-sm">Go to Staging <kbd>s</kbd></a>
+</div>
+{% endif %}
+
+{% if secrets_found %}
+<div class="alert alert-danger">
+  <div>
+    <strong>⚠️ Potential Secrets Detected in Staged Changes!</strong>
+    <p style="font-size:12px; margin-top:4px;">
+      Zit's local secret scanning engine detected <strong>{{ secrets_found|length }}</strong> potential sensitive secret(s). Please review before committing to prevent leaks.
+    </p>
+    <ul style="margin-top:6px; margin-left:20px; font-size:12px;">
+      {% for s in secrets_found %}
+        <li><code>{{ s.file }}:{{ s.line }}</code> — <strong>{{ s.rule_name }}</strong> (<code>{{ s.preview }}</code>)</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid-2">
+  <!-- Left Side: Commit Form & AI Assistant -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">✍️ Compose Commit</h3>
+      <button type="button" class="btn btn-sm" id="btnAiSuggest" onclick="requestAiCommitSuggestions()" style="background:rgba(163,113,247,0.15); color:var(--accent-purple); border-color:var(--accent-purple);">
+        ✨ Suggest with Gemini
+      </button>
+    </div>
+    <div class="card-body">
+      <!-- AI Suggestions container -->
+      <div id="aiSuggestionsBox" style="display:none; margin-bottom:16px; background:var(--bg-primary); border:1px solid var(--accent-purple); border-radius:var(--radius-sm); padding:12px;">
+        <div style="font-size:12px; font-weight:600; color:var(--accent-purple); margin-bottom:8px; display:flex; justify-content:space-between;">
+          <span>🤖 Gemini AI Suggestions (Click to use):</span>
+          <span id="aiLoadingSpinner" style="display:none;">Loading...</span>
+        </div>
+        <div id="aiSuggestionsList" style="display:flex; flex-direction:column; gap:6px;"></div>
+      </div>
+
+      <form method="POST" action="{% url 'zit:commit' %}">
+        {% csrf_token %}
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Type</label>
+            <select name="commit_type" id="commitType" class="form-control" onchange="updatePreview()">
+              <option value="feat">feat (New feature)</option>
+              <option value="fix">fix (Bug fix)</option>
+              <option value="docs">docs (Documentation only)</option>
+              <option value="style">style (Formatting, missing semicolons, etc)</option>
+              <option value="refactor">refactor (Code change that neither fixes bug nor adds feature)</option>
+              <option value="perf">perf (Performance improvement)</option>
+              <option value="test">test (Adding or correcting tests)</option>
+              <option value="build">build (Build system or dependencies)</option>
+              <option value="ci">ci (CI configuration / scripts)</option>
+              <option value="chore">chore (Other changes that don't modify src or test)</option>
+              <option value="revert">revert (Reverts a previous commit)</option>
+              <option value="">(None - Plain subject)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Scope (Optional)</label>
+            <input type="text" name="scope" id="commitScope" class="form-control" placeholder="e.g. auth, api, ui" oninput="updatePreview()">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label class="form-label">Subject Line</label>
+            <span id="charCounter" class="font-mono" style="font-size:11px; color:var(--accent-green-bright);">0 / 50 chars</span>
+          </div>
+          <input type="text" name="subject" id="commitSubject" class="form-control" placeholder="imperative verb, under 50 chars (e.g. add user profile page)" required oninput="updatePreview()">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Body / Extended Description (Optional)</label>
+          <textarea name="body" id="commitBody" rows="5" class="form-control font-mono" placeholder="Explain the problem this commit solves and the motivation behind it..."></textarea>
+        </div>
+
+        <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" name="is_breaking" id="isBreaking" onchange="updatePreview()">
+          <label for="isBreaking" style="font-size:13px; color:var(--text-main); cursor:pointer;">
+            <strong>Breaking Change</strong> (appends <code>!</code> and BREAKING CHANGE note)
+          </label>
+        </div>
+
+        {% if secrets_found %}
+        <div class="form-group" style="background:rgba(248,81,73,0.1); border:1px solid var(--accent-red); padding:10px; border-radius:var(--radius-sm); display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" name="bypass_secrets" id="bypassSecrets">
+          <label for="bypassSecrets" style="font-size:12px; color:var(--accent-red); font-weight:600; cursor:pointer;">
+            I have reviewed the secret warnings and choose to bypass them
+          </label>
+        </div>
+        {% endif %}
+
+        <!-- Real-time Preview -->
+        <div style="background:var(--bg-primary); border:1px solid var(--border-color); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:16px;">
+          <div style="font-size:11px; text-transform:uppercase; color:var(--text-dim); margin-bottom:4px;">Commit Preview:</div>
+          <div id="previewBox" class="font-mono" style="font-size:13px; color:var(--accent-cyan); font-weight:600;">feat: ...</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%; padding:10px;" {% if not status.staged %}disabled{% endif %}>
+          🚀 Submit Commit
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right Side: Staged Changes Diffstat & Preview -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">📊 Staged Diffstat ({{ status.staged|length }} files)</h3>
+      </div>
+      <div class="card-body">
+        {% if diffstat %}
+          <pre class="font-mono" style="font-size:12px; color:var(--text-muted); background:var(--bg-primary); padding:10px; border-radius:var(--radius-sm); overflow-x:auto;">{{ diffstat }}</pre>
+        {% else %}
+          <p style="font-size:13px; color:var(--text-dim);">No staged statistics available.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">🔍 Staged Changes Preview</h3>
+      </div>
+      <div class="card-body" style="padding:0; max-height:400px; overflow-y:auto;">
+        {% if staged_diffs %}
+          {% for fd in staged_diffs %}
+            <div style="padding:8px 12px; background:var(--bg-card); border-bottom:1px solid var(--border-color); font-size:12px; font-weight:600;">
+              {{ fd.path }} <span style="color:var(--accent-green-bright);">(+{{ fd.additions }})</span> <span style="color:var(--accent-red);">(-{{ fd.deletions }})</span>
+            </div>
+            {% for hunk in fd.hunks %}
+              <div class="diff-lines" style="font-size:11px;">
+                {% for l in hunk.lines %}
+                  <div class="diff-line diff-line-{{ l.line_type }}">
+                    <span>{{ l.content }}</span>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endfor %}
+          {% endfor %}
+        {% else %}
+          <div style="padding:20px; text-align:center; color:var(--text-dim); font-size:13px;">
+            No staged diff content.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function updatePreview() {
+  const type = document.getElementById('commitType').value;
+  const scope = document.getElementById('commitScope').value.trim();
+  const subject = document.getElementById('commitSubject').value.trim();
+  const isBreaking = document.getElementById('isBreaking').checked;
+
+  let prefix = type;
+  if (scope) prefix += `(${scope})`;
+  if (isBreaking) prefix += '!';
+
+  const full = prefix ? `${prefix}: ${subject || '...'}` : (subject || '...');
+  document.getElementById('previewBox').textContent = full;
+
+  const count = subject.length;
+  const counterEl = document.getElementById('charCounter');
+  counterEl.textContent = `${count} / 50 chars`;
+  if (count <= 50) {
+    counterEl.style.color = 'var(--accent-green-bright)';
+  } else if (count <= 72) {
+    counterEl.style.color = 'var(--accent-yellow)';
+  } else {
+    counterEl.style.color = 'var(--accent-red)';
+  }
+}
+
+async function requestAiCommitSuggestions() {
+  const box = document.getElementById('aiSuggestionsBox');
+  const list = document.getElementById('aiSuggestionsList');
+  const spinner = document.getElementById('aiLoadingSpinner');
+
+  box.style.display = 'block';
+  spinner.style.display = 'inline';
+  list.innerHTML = '<div style="font-size:12px; color:var(--text-muted);">Consulting Gemini API...</div>';
+
+  try {
+    const res = await fetch('/api/ai-commit/', { method: 'POST' });
+    const data = await res.json();
+    spinner.style.display = 'none';
+
+    if (data.success && data.suggestions && data.suggestions.length > 0) {
+      list.innerHTML = '';
+      data.suggestions.forEach(s => {
+        const item = document.createElement('div');
+        item.className = 'btn btn-sm';
+        item.style.textAlign = 'left';
+        item.style.justifyContent = 'flex-start';
+        item.style.fontFamily = 'var(--font-mono)';
+        item.style.fontSize = '12px';
+        item.textContent = s;
+        item.onclick = function() {
+          applySuggestion(s);
+        };
+        list.appendChild(item);
+      });
+    } else {
+      list.innerHTML = `<div style="color:var(--accent-red); font-size:12px;">Failed: ${data.error || 'No suggestions returned'}</div>`;
+    }
+  } catch (err) {
+    spinner.style.display = 'none';
+    list.innerHTML = `<div style="color:var(--accent-red); font-size:12px;">Error: ${err}</div>`;
+  }
+}
+
+function applySuggestion(s) {
+  // Parse conventional format if present (e.g. "feat: message" or "fix(ui): message")
+  if (s.includes(':')) {
+    const parts = s.split(':', 2);
+    const prefix = parts[0].trim();
+    const rest = parts[1].trim();
+
+    // Check scope
+    if (prefix.includes('(') && prefix.includes(')')) {
+      const type = prefix.split('(')[0];
+      const scope = prefix.split('(')[1].replace(')', '');
+      document.getElementById('commitType').value = type;
+      document.getElementById('commitScope').value = scope;
+    } else {
+      document.getElementById('commitType').value = prefix;
+      document.getElementById('commitScope').value = '';
+    }
+    document.getElementById('commitSubject').value = rest;
+  } else {
+    document.getElementById('commitSubject').value = s;
+  }
+  updatePreview();
+  showToast('Applied AI suggestion to commit form', 'success');
+}
+</script>
+{% endblock %}

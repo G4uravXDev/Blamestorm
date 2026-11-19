@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Merge Conflict Resolver — zit{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="font-size:22px; font-weight:700;">Merge Conflict Resolver</h1>
+    <p style="font-size:13px; color:var(--text-muted);">
+      Intelligently resolve merge, rebase, and cherry-pick conflicts with side-by-side inspection and Gemini AI assistance.
+    </p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    {% if merge_state.is_merging %}
+      <button class="btn btn-danger btn-sm" onclick="if(confirm('Abort active merge/rebase?')) runGitAction('abort_merge')">✕ Abort {{ merge_state.merge_type }}</button>
+      <button class="btn btn-primary btn-sm" onclick="runGitAction('continue_merge')">✓ Complete / Continue {{ merge_state.merge_type }}</button>
+    {% endif %}
+  </div>
+</div>
+
+{% if merge_state.is_merging %}
+<div class="alert alert-warning" style="margin-bottom:16px;">
+  <div>
+    <strong>Operation in Progress:</strong> A <strong>{{ merge_state.merge_type }}</strong> is currently active on branch <code>{{ merge_state.head_name }}</code>.
+    {% if conflicted_files %}
+      There are <strong>{{ conflicted_files|length }}</strong> conflicted file(s) remaining.
+    {% else %}
+      All conflicts resolved! Click <strong>Complete / Continue</strong> to finalize the merge commit.
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="grid-sidebar">
+  <!-- Left Side: Conflicted Files List -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title" style="color:var(--accent-yellow); font-size:13px;">
+          ⚠️ Conflicted Files ({{ conflicted_files|length }})
+        </h3>
+      </div>
+      <div class="card-body" style="padding:4px 0;">
+        {% if conflicted_files %}
+          {% for f in conflicted_files %}
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border-bottom:1px solid var(--border-color); background:{% if selected_file == f %}var(--bg-hover){% else %}transparent{% endif %};">
+              <a href="?file={{ f }}" class="font-mono" style="font-size:12px; font-weight:600; color:var(--text-main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px;">
+                {{ f }}
+              </a>
+              <span class="badge badge-conflict" style="font-size:10px;">conflicted</span>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div style="padding:20px; text-align:center; color:var(--accent-green-bright); font-size:13px;">
+            ✓ No conflicted files!
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Conflict Resolution Panel -->
+  <div>
+    {% if conflict_data %}
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="color:var(--text-muted);">Conflicted File:</span> 
+            <strong class="font-mono" style="color:var(--accent-blue);">{{ conflict_data.path }}</strong>
+            <span style="font-size:11px; color:var(--text-dim); margin-left:8px;">({{ conflict_data.regions|length }} conflict regions)</span>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-sm" onclick="runGitAction('resolve_ours', {path: '{{ conflict_data.path }}'})" title="Keep HEAD version">
+              Keep Ours (Current)
+            </button>
+            <button class="btn btn-sm" onclick="runGitAction('resolve_theirs', {path: '{{ conflict_data.path }}'})" title="Keep incoming version">
+              Keep Theirs (Incoming)
+            </button>
+            <button class="btn btn-sm" onclick="runGitAction('resolve_both', {path: '{{ conflict_data.path }}'})" title="Keep both">
+              Keep Both
+            </button>
+            <button class="btn btn-sm" style="background:rgba(163,113,247,0.15); color:var(--accent-purple); border-color:var(--accent-purple);" onclick="requestAiResolve('{{ conflict_data.path }}')">
+              🤖 Resolve with Gemini
+            </button>
+          </div>
+        </div>
+
+        <!-- AI Recommendation Output Box -->
+        <div id="aiResolveBox" style="display:none; padding:16px; background:var(--bg-primary); border-bottom:1px solid var(--accent-purple);">
+          <div style="font-size:13px; font-weight:700; color:var(--accent-purple); margin-bottom:8px; display:flex; justify-content:space-between;">
+            <span>🤖 Gemini AI Conflict Analysis & Recommendation:</span>
+            <span id="aiResolveSpinner" style="display:none;">Analyzing with Gemini...</span>
+          </div>
+          <pre id="aiResolveText" class="font-mono" style="font-size:12px; white-space:pre-wrap; line-height:1.4; color:var(--text-main); max-height:260px; overflow-y:auto;"></pre>
+        </div>
+
+        <div class="card-body">
+          {% for r in conflict_data.regions %}
+            <div style="border:1px solid var(--border-color); border-radius:var(--radius-sm); margin-bottom:16px; overflow:hidden;">
+              <div style="background:var(--bg-card); padding:6px 12px; font-size:11px; font-weight:600; color:var(--text-dim); border-bottom:1px solid var(--border-color);">
+                Conflict Region #{{ forloop.counter }} (lines {{ r.start_line }} to {{ r.end_line }})
+              </div>
+              <div class="grid-2">
+                <!-- Current / Ours -->
+                <div style="border-right:1px solid var(--border-color);">
+                  <div style="background:rgba(56,139,253,0.15); padding:6px 10px; font-size:11px; font-weight:600; color:var(--accent-blue);">
+                    <<<<<<< {{ r.current_label }} (Current / Ours)
+                  </div>
+                  <pre class="font-mono" style="font-size:12px; padding:10px; background:#0d1117; color:#7ee787; min-height:80px; overflow-x:auto;">{{ r.current_text }}</pre>
+                </div>
+                <!-- Incoming / Theirs -->
+                <div>
+                  <div style="background:rgba(210,153,34,0.15); padding:6px 10px; font-size:11px; font-weight:600; color:var(--accent-yellow);">
+                    >>>>>>> {{ r.incoming_label }} (Incoming / Theirs)
+                  </div>
+                  <pre class="font-mono" style="font-size:12px; padding:10px; background:#0d1117; color:#ffa198; min-height:80px; overflow-x:auto;">{{ r.incoming_text }}</pre>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+
+          <!-- Direct Content Editor -->
+          <div style="margin-top:16px;">
+            <label class="form-label">Full File Editor (Edit &amp; Save to stage resolution)</label>
+            <textarea id="customFileContent" rows="14" class="form-control font-mono" style="font-size:12px; line-height:1.4;">{{ conflict_data.raw_content }}</textarea>
+            <div style="margin-top:8px; display:flex; justify-content:flex-end;">
+              <button class="btn btn-primary btn-sm" onclick="saveCustomResolution('{{ conflict_data.path }}')">💾 Save &amp; Mark Resolved</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="card" style="padding:40px; text-align:center;">
+        <h3 style="color:var(--text-muted); font-size:16px; margin-bottom:8px;">Select a conflicted file</h3>
+        <p style="color:var(--text-dim); font-size:13px;">
+          Choose a file from the list on the left to inspect conflicting sections and resolve.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+async function requestAiResolve(path) {
+  const box = document.getElementById('aiResolveBox');
+  const spinner = document.getElementById('aiResolveSpinner');
+  const textEl = document.getElementById('aiResolveText');
+
+  box.style.display = 'block';
+  spinner.style.display = 'inline';
+  textEl.textContent = 'Generating intelligent resolution...';
+
+  try {
+    const res = await fetch('/api/ai-resolve/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: path })
+    });
+    const data = await res.json();
+    spinner.style.display = 'none';
+
+    if (data.success && data.resolution) {
+      textEl.textContent = data.resolution;
+    } else {
+      textEl.textContent = 'Failed: ' + (data.error || 'Unknown error');
+    }
+  } catch (err) {
+    spinner.style.display = 'none';
+    textEl.textContent = 'Error: ' + err;
+  }
+}
+
+function saveCustomResolution(path) {
+  const content = document.getElementById('customFileContent').value;
+  runGitAction('resolve_custom', { path: path, content: content });
+}
+</script>
+{% endblock %}

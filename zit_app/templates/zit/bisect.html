@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Git Bisect — zit{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="font-size:22px; font-weight:700;">Git Bisect Debugger</h1>
+    <p style="font-size:13px; color:var(--text-muted);">
+      Binary search through commit history to pinpoint the exact commit that introduced a bug.
+    </p>
+  </div>
+  <div>
+    {% if bisect_status.active %}
+      <button class="btn btn-danger btn-sm" onclick="runGitAction('bisect_reset')">Reset Bisect</button>
+    {% endif %}
+  </div>
+</div>
+
+{% if bisect_status.phase == "found" %}
+<div class="alert alert-danger" style="margin-bottom:16px;">
+  <div>
+    <h3 style="font-size:16px; font-weight:700; margin-bottom:4px;">🎯 Offending Commit Found!</h3>
+    <p style="font-size:13px;">{{ bisect_status.summary }}</p>
+    <div style="margin-top:8px;">
+      <a href="{% url 'zit:timeline' %}?commit={{ bisect_status.first_bad_commit }}" class="btn btn-sm">Inspect Bad Commit</a>
+      <button class="btn btn-sm" onclick="runGitAction('bisect_reset')">Reset Bisect Session</button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid-2">
+  <!-- Left Side: Status / Control Panel -->
+  <div>
+    {% if bisect_status.active %}
+      <div class="card">
+        <div class="card-header" style="background:rgba(56,139,253,0.15);">
+          <h3 class="card-title" style="color:var(--accent-blue);">
+            Bisect in Progress
+          </h3>
+        </div>
+        <div class="card-body">
+          <div style="margin-bottom:16px;">
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Currently Testing Commit:</div>
+            <div class="font-mono" style="font-size:15px; font-weight:700; color:var(--accent-cyan);">
+              {{ bisect_status.current_commit }}
+            </div>
+            <div style="font-size:12px; color:var(--text-dim); margin-top:4px;">
+              Roughly {{ bisect_status.steps_remaining }} steps remaining (~{{ bisect_status.revisions_left }} revisions to test).
+            </div>
+          </div>
+
+          <div style="font-size:13px; margin-bottom:12px; font-weight:600;">
+            Does this revision contain the bug?
+          </div>
+
+          <div style="display:flex; gap:10px;">
+            <button class="btn btn-primary" style="flex:1;" onclick="runGitAction('bisect_good')">
+              ✓ Good (Bug NOT present)
+            </button>
+            <button class="btn btn-danger" style="flex:1;" onclick="runGitAction('bisect_bad')">
+              ✕ Bad (Bug IS present)
+            </button>
+            <button class="btn" style="flex:1;" onclick="runGitAction('bisect_skip')">
+              ↷ Skip
+            </button>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">🚀 Start New Bisect Session</h3>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
+            Specify a known-bad commit (where the bug exists) and a known-good commit (before the bug was introduced).
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Known Bad Commit</label>
+            <input type="text" id="bisectBad" class="form-control font-mono" value="HEAD" placeholder="HEAD or commit SHA">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Known Good Commit</label>
+            <input type="text" id="bisectGood" class="form-control font-mono" placeholder="HEAD~10 or commit SHA or v1.0.0">
+          </div>
+
+          <button class="btn btn-primary" onclick="submitStartBisect()">Start Bisect Session</button>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Bisect Log -->
+    <div class="card" style="margin-top:16px;">
+      <div class="card-header">
+        <h3 class="card-title">📋 Bisect Log</h3>
+      </div>
+      <div class="card-body">
+        {% if bisect_status.log_text %}
+          <pre class="font-mono" style="font-size:12px; background:var(--bg-primary); padding:10px; border-radius:var(--radius-sm); white-space:pre-wrap; max-height:220px; overflow-y:auto;">{{ bisect_status.log_text }}</pre>
+        {% else %}
+          <div style="font-size:12px; color:var(--text-dim);">No active bisect log.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Recent Commits Reference -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">📜 Reference Commits</h3>
+      </div>
+      <div class="card-body" style="padding:0; max-height:550px; overflow-y:auto;">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>SHA</th>
+              <th>Message</th>
+              <th>Author</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in recent_commits %}
+              <tr>
+                <td class="font-mono" style="font-size:11px; color:var(--accent-cyan);">{{ c.short_hash }}</td>
+                <td style="font-size:12px;">{{ c.subject|truncatechars:40 }}</td>
+                <td style="font-size:11px; color:var(--text-muted);">{{ c.author_name }}</td>
+                <td>
+                  <button class="btn btn-sm" style="font-size:10px; padding:2px 6px;" onclick="document.getElementById('bisectGood').value = '{{ c.hash }}'">Use as Good</button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function submitStartBisect() {
+  const bad = document.getElementById('bisectBad').value.trim() || 'HEAD';
+  const good = document.getElementById('bisectGood').value.trim();
+  if (!good) {
+    showToast('Please specify a known-good commit', 'warning');
+    return;
+  }
+  runGitAction('bisect_start', { bad: bad, good: good });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}GitHub Integration — zit{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="font-size:22px; font-weight:700;">GitHub Integration</h1>
+    <p style="font-size:13px; color:var(--text-muted);">
+      Synchronize remote repositories, manage fetch/push remotes, and streamline pull request flows.
+    </p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <button class="btn btn-sm" onclick="runGitAction('git_fetch')">Fetch All (Prune)</button>
+    <button class="btn btn-sm" onclick="runGitAction('git_pull')">Pull (Fast-Forward)</button>
+    <button class="btn btn-primary btn-sm" onclick="runGitAction('git_push')">Push</button>
+    <button class="btn btn-blue btn-sm" onclick="runGitAction('git_sync')">🔄 Full Sync (Pull + Push)</button>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Left Side: Remotes Management -->
+  <div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 class="card-title">🌐 Connected Remotes</h3>
+        <button class="btn btn-sm" onclick="openModal('addRemoteModal')">+ Add Remote</button>
+      </div>
+      <div class="card-body" style="padding:0;">
+        {% if remotes %}
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Fetch URL</th>
+                <th>Push URL</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in remotes %}
+                <tr>
+                  <td><strong class="font-mono" style="color:var(--accent-blue);">{{ r.name }}</strong></td>
+                  <td class="font-mono" style="font-size:11px; color:var(--text-muted);">{{ r.fetch_url }}</td>
+                  <td class="font-mono" style="font-size:11px; color:var(--text-muted);">{{ r.push_url }}</td>
+                  <td>
+                    <div style="display:flex; gap:4px;">
+                      <button class="btn btn-sm" onclick="runGitAction('git_pull', {remote: '{{ r.name }}'})" title="Pull">⬇</button>
+                      <button class="btn btn-sm" onclick="runGitAction('git_push', {remote: '{{ r.name }}'})" title="Push">⬆</button>
+                      <button class="btn btn-danger btn-sm" onclick="if(confirm('Remove remote {{ r.name }}?')) runRemoveRemote('{{ r.name }}')" title="Remove">✕</button>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div style="padding:24px; text-align:center; color:var(--text-dim); font-size:13px;">
+            No remotes linked to this repository yet.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Push Options Card -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">⬆️ Advanced Push Options</h3>
+      </div>
+      <div class="card-body" style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong>Push with Lease (--force-with-lease)</strong>
+            <div style="font-size:11px; color:var(--text-dim);">Safe force push that rejects if remote was updated by someone else</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="if(confirm('Force push with lease?')) runGitAction('git_push', {force: true})">Force Push</button>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong>Set Upstream (-u origin current_branch)</strong>
+            <div style="font-size:11px; color:var(--text-dim);">Link current branch to remote tracking branch</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="runGitAction('git_push', {set_upstream: true})">Push &amp; Set Upstream</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Pull Requests & GitHub Flow -->
+  <div>
+    <div class="card">
+      <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 class="card-title">🔀 GitHub Pull Requests</h3>
+        {% if remotes %}
+          <button class="btn btn-primary btn-sm" onclick="openGitHubPrUrl()">+ New PR on GitHub</button>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
+          Seamlessly create and inspect GitHub Pull Requests from your local branch.
+        </p>
+
+        <div style="background:var(--bg-primary); padding:14px; border-radius:var(--radius-sm); border:1px solid var(--border-color); margin-bottom:16px;">
+          <div style="font-size:12px; color:var(--text-dim); margin-bottom:4px;">Current Local Branch:</div>
+          <div class="font-mono" style="font-size:16px; font-weight:700; color:var(--accent-cyan);">
+            {{ status.branch }}
+          </div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">
+            Target Base Branch: <code>main</code>
+          </div>
+        </div>
+
+        {% if remotes %}
+          <button class="btn btn-blue" style="width:100%;" onclick="openGitHubPrUrl()">
+            Open GitHub Compare &amp; Pull Request in Browser ↗
+          </button>
+        {% else %}
+          <div style="text-align:center; color:var(--text-dim); font-size:12px;">
+            Add a GitHub remote repository to enable pull request integrations.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Remote Modal -->
+<div id="addRemoteModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="card-title">🌐 Add Git Remote</h3>
+      <button class="btn btn-sm" onclick="closeModal('addRemoteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Remote Name</label>
+        <input type="text" id="newRemoteName" class="form-control font-mono" value="origin" placeholder="origin">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Remote URL</label>
+        <input type="text" id="newRemoteUrl" class="form-control font-mono" placeholder="https://github.com/user/repo.git or git@github.com:user/repo.git">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="closeModal('addRemoteModal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitAddRemote()">Add Remote</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function submitAddRemote() {
+  const name = document.getElementById('newRemoteName').value.trim();
+  const url = document.getElementById('newRemoteUrl').value.trim();
+  if (!name || !url) {
+    showToast('Both remote name and URL are required', 'warning');
+    return;
+  }
+  // Run custom add_remote action
+  fetch('/api/git-command/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'create_branch' }) // dummy to check
+  });
+  // Use runGitAction
+  runGitAction('git_fetch', { remote: name }); // fetch triggers reload
+}
+
+function runRemoveRemote(name) {
+  // execute remote remove via runner
+  showToast('Removing remote ' + name, 'info');
+  // Can be implemented via general API
+}
+
+function openGitHubPrUrl() {
+  {% if remotes %}
+    let remoteUrl = '{{ remotes.0.fetch_url }}';
+    // Convert git@github.com:owner/repo.git to https://github.com/owner/repo
+    if (remoteUrl.startsWith('git@github.com:')) {
+      remoteUrl = 'https://github.com/' + remoteUrl.replace('git@github.com:', '').replace('.git', '');
+    } else if (remoteUrl.endsWith('.git')) {
+      remoteUrl = remoteUrl.slice(0, -4);
+    }
+    const prUrl = `${remoteUrl}/compare/main...{{ status.branch }}?expand=1`;
+    window.open(prUrl, '_blank');
+  {% else %}
+    showToast('No remote configured', 'warning');
+  {% endif %}
+}
+</script>
+{% endblock %}

@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}AI Mentor — zit{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="font-size:22px; font-weight:700; color:var(--accent-purple); display:flex; align-items:center; gap:8px;">
+      🤖 AI Git Mentor
+    </h1>
+    <p style="font-size:13px; color:var(--text-muted);">
+      Your intelligent, patient Git tutor and troubleshooter powered by Google Gemini.
+    </p>
+  </div>
+  <div>
+    <a href="{% url 'zit:agent' %}" class="btn btn-blue btn-sm">⚡ Switch to Autonomous Agent Mode <kbd>A</kbd></a>
+  </div>
+</div>
+
+{% if not gemini_configured %}
+<div class="alert alert-warning" style="margin-bottom:16px;">
+  <div>
+    <strong>Gemini API Key Required:</strong> To unlock AI features, please configure your free Google Gemini API key.
+  </div>
+  <a href="{% url 'zit:settings' %}" class="btn btn-sm">Configure in Settings →</a>
+</div>
+{% endif %}
+
+<div class="grid-2">
+  <!-- Left Column: Mode Selector & Inputs -->
+  <div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <h3 class="card-title">Choose AI Mentor Mode</h3>
+      </div>
+      <div class="card-body">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px;">
+          <button class="btn btn-sm" id="btnModeExplain" onclick="selectMode('explain')">
+            🔍 Explain Repo State
+          </button>
+          <button class="btn btn-sm" id="btnModeRecommend" onclick="selectMode('recommend')">
+            🛡️ Safe Recommendations
+          </button>
+          <button class="btn btn-sm" id="btnModeError" onclick="selectMode('error')">
+            🏥 Git Troubleshooter
+          </button>
+          <button class="btn btn-sm" id="btnModeReview" onclick="selectMode('review')">
+            🔬 Review Staged Diff
+          </button>
+          <button class="btn btn-sm" id="btnModeLearn" onclick="selectMode('learn')">
+            📖 Learn Git Concept
+          </button>
+          <button class="btn btn-sm" id="btnModeGitignore" onclick="selectMode('generate_gitignore')">
+            📄 Generate .gitignore
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" id="inputLabel">Ask a Question or Describe your Problem</label>
+          <textarea id="mentorInput" rows="5" class="form-control" placeholder="e.g. How do I squash my last 3 commits before pushing? Or paste a git error message here..."></textarea>
+        </div>
+
+        <button class="btn btn-primary" id="btnSubmitMentor" style="width:100%; background:var(--accent-purple); border-color:var(--accent-purple);" onclick="runMentorQuery()">
+          ✨ Ask Gemini Mentor
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Prompts Inspiration Box -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">💡 Popular Questions</h3>
+      </div>
+      <div class="card-body" style="display:flex; flex-direction:column; gap:6px;">
+        <button class="btn btn-sm" style="text-align:left; justify-content:flex-start; font-size:12px;" onclick="setPromptAndRun('explain', '')">
+          🔍 "Explain what state my repository is currently in."
+        </button>
+        <button class="btn btn-sm" style="text-align:left; justify-content:flex-start; font-size:12px;" onclick="setPromptAndRun('recommend', '')">
+          🛡️ "What is the safest next action for my uncommitted changes?"
+        </button>
+        <button class="btn btn-sm" style="text-align:left; justify-content:flex-start; font-size:12px;" onclick="setPromptAndRun('learn', 'What is git reflog and when should I use it?')">
+          📖 "What is git reflog and how can it save my work?"
+        </button>
+        <button class="btn btn-sm" style="text-align:left; justify-content:flex-start; font-size:12px;" onclick="setPromptAndRun('learn', 'Explain git rebase vs git merge with an analogy.')">
+          📖 "Explain git rebase vs merge with simple analogies."
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: AI Output Panel -->
+  <div>
+    <div class="card">
+      <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 class="card-title">
+          <span>🤖 Gemini Mentor Response</span>
+          <span id="mentorLoading" style="display:none; font-size:12px; color:var(--accent-purple); margin-left:8px;">Thinking...</span>
+        </h3>
+        <button class="btn btn-sm" onclick="copyMentorResponse()">📋 Copy</button>
+      </div>
+      <div class="card-body">
+        <div id="mentorOutput" class="font-mono" style="font-size:13px; line-height:1.6; white-space:pre-wrap; background:var(--bg-primary); padding:16px; border-radius:var(--radius-sm); border:1px solid var(--border-color); min-height:360px; max-height:600px; overflow-y:auto; color:var(--text-main);">
+Click any mode on the left or type your question to receive clear, step-by-step guidance from Gemini.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentMode = 'explain';
+
+function selectMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('[id^="btnMode"]').forEach(b => {
+    b.classList.remove('btn-primary');
+  });
+
+  const activeBtn = document.getElementById('btnMode' + mode.charAt(0).toUpperCase() + mode.slice(1).replace('_g', 'G'));
+  if (activeBtn) activeBtn.classList.add('btn-primary');
+
+  const label = document.getElementById('inputLabel');
+  const input = document.getElementById('mentorInput');
+
+  if (mode === 'explain') {
+    label.textContent = 'Explain Current Repository State (Optional custom question)';
+    input.placeholder = 'Leave blank to explain current state, or ask specific details...';
+  } else if (mode === 'recommend') {
+    label.textContent = 'Describe what you want to achieve';
+    input.placeholder = 'e.g. I want to pull upstream changes without overwriting my local code...';
+  } else if (mode === 'error') {
+    label.textContent = 'Paste Git Error Output';
+    input.placeholder = 'fatal: refusing to merge unrelated histories... or error: your local changes would be overwritten by merge...';
+  } else if (mode === 'review') {
+    label.textContent = 'Staged Code Review Notes (Optional focus)';
+    input.placeholder = 'Focus on performance, security, or specific modules...';
+  } else if (mode === 'learn') {
+    label.textContent = 'Git Concept to Learn';
+    input.placeholder = 'e.g. cherry-pick, submodules, interactive rebase, detached head...';
+  } else if (mode === 'generate_gitignore') {
+    label.textContent = 'Additional File Patterns or Frameworks to Ignore';
+    input.placeholder = 'e.g. Django, Next.js, PyTorch, credentials...';
+  }
+}
+
+function setPromptAndRun(mode, question) {
+  selectMode(mode);
+  document.getElementById('mentorInput').value = question;
+  runMentorQuery();
+}
+
+async function runMentorQuery() {
+  const outputEl = document.getElementById('mentorOutput');
+  const loadingEl = document.getElementById('mentorLoading');
+  const question = document.getElementById('mentorInput').value.trim();
+
+  outputEl.textContent = 'Gemini is analyzing your repository and formulating recommendations...';
+  loadingEl.style.display = 'inline';
+
+  try {
+    const res = await fetch('/api/ai-mentor/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query_type: currentMode,
+        question: question
+      })
+    });
+    const data = await res.json();
+    loadingEl.style.display = 'none';
+
+    if (data.success && data.answer) {
+      outputEl.textContent = data.answer;
+    } else {
+      outputEl.textContent = 'Failed: ' + (data.error || 'Unknown error occurred');
+    }
+  } catch (err) {
+    loadingEl.style.display = 'none';
+    outputEl.textContent = 'Network or API error: ' + err;
+  }
+}
+
+function copyMentorResponse() {
+  const text = document.getElementById('mentorOutput').textContent;
+  navigator.clipboard.writeText(text);
+  showToast('Copied mentor response to clipboard', 'success');
+}
+
+document.addEventListener('DOMContentLoaded', () => selectMode('explain'));
+</script>
+{% endblock %}

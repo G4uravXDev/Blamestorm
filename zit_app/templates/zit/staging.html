@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Smart Staging — zit{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="font-size:22px; font-weight:700;">Smart Staging</h1>
+    <p style="font-size:13px; color:var(--text-muted);">
+      Interactive file staging, diff inspection, and hunk-level staging.
+    </p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <button class="btn btn-sm" onclick="runGitAction('unstage_all')" title="Unstage all files">Unstage All</button>
+    <button class="btn btn-primary btn-sm" onclick="runGitAction('stage_all')" title="Stage all changes">Stage All (+A)</button>
+    <a href="{% url 'zit:commit' %}" class="btn btn-blue btn-sm">Proceed to Commit <kbd>c</kbd></a>
+  </div>
+</div>
+
+{% if secrets_found %}
+<div class="alert alert-danger" style="margin-bottom:16px;">
+  <div>
+    <strong>🔒 Secret Warning Engine:</strong> Zit detected <strong>{{ secrets_found|length }}</strong> secret(s) in your staged changes!
+    <ul style="margin-top:6px; margin-left:20px; font-size:12px;">
+      {% for s in secrets_found %}
+        <li><code>{{ s.file }}:{{ s.line }}</code> — <strong>{{ s.rule_name }}</strong> (preview: <code>{{ s.preview }}</code>)</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid-sidebar">
+  <!-- Left Side: File Lists -->
+  <div>
+    <!-- Staged Files -->
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-header" style="background:rgba(46,160,67,0.1);">
+        <h3 class="card-title" style="color:var(--accent-green-bright); font-size:13px;">
+          📦 Staged Changes ({{ status.staged|length }})
+        </h3>
+      </div>
+      <div class="card-body" style="padding:4px 0;">
+        {% if status.staged %}
+          {% for f in status.staged %}
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 12px; border-bottom:1px solid var(--border-color); background:{% if selected_file == f.path and diff_type == 'staged' %}var(--bg-hover){% else %}transparent{% endif %};">
+              <a href="?file={{ f.path }}&type=staged" class="font-mono" style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px;">
+                {{ f.path }}
+              </a>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <span class="badge badge-clean" style="font-size:10px;">{{ f.status }}</span>
+                <button class="btn btn-sm" style="padding:1px 5px; font-size:11px;" onclick="runGitAction('unstage_file', {path: '{{ f.path }}'})" title="Unstage file">−</button>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div style="padding:12px; font-size:12px; color:var(--text-dim); text-align:center;">
+            No staged files
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Unstaged Files -->
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-header">
+        <h3 class="card-title" style="color:var(--accent-yellow); font-size:13px;">
+          📝 Unstaged Changes ({{ status.unstaged|length }})
+        </h3>
+      </div>
+      <div class="card-body" style="padding:4px 0;">
+        {% if status.unstaged %}
+          {% for f in status.unstaged %}
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 12px; border-bottom:1px solid var(--border-color); background:{% if selected_file == f.path and diff_type == 'unstaged' %}var(--bg-hover){% else %}transparent{% endif %};">
+              <a href="?file={{ f.path }}&type=unstaged" class="font-mono" style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px;">
+                {{ f.path }}
+              </a>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <span class="badge badge-dirty" style="font-size:10px;">{{ f.status }}</span>
+                <button class="btn btn-sm" style="padding:1px 5px; font-size:11px;" onclick="runGitAction('stage_file', {path: '{{ f.path }}'})" title="Stage file">+</button>
+                <button class="btn btn-danger btn-sm" style="padding:1px 5px; font-size:11px;" onclick="if(confirm('Discard changes in {{ f.path }}?')) runGitAction('discard_file', {path: '{{ f.path }}', is_untracked: false})" title="Discard changes">✕</button>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div style="padding:12px; font-size:12px; color:var(--text-dim); text-align:center;">
+            No modified unstaged files
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Untracked Files -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title" style="color:var(--accent-cyan); font-size:13px;">
+          ❓ Untracked Files ({{ status.untracked|length }})
+        </h3>
+      </div>
+      <div class="card-body" style="padding:4px 0;">
+        {% if status.untracked %}
+          {% for f in status.untracked %}
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 12px; border-bottom:1px solid var(--border-color);">
+              <span class="font-mono" style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px;">
+                {{ f.path }}
+              </span>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <button class="btn btn-sm" style="padding:1px 5px; font-size:11px;" onclick="runGitAction('stage_file', {path: '{{ f.path }}'})" title="Track & Stage">+</button>
+                <button class="btn btn-danger btn-sm" style="padding:1px 5px; font-size:11px;" onclick="if(confirm('Permanently delete {{ f.path }}?')) runGitAction('discard_file', {path: '{{ f.path }}', is_untracked: true})" title="Delete untracked file">✕</button>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div style="padding:12px; font-size:12px; color:var(--text-dim); text-align:center;">
+            No untracked files
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Unified Diff Preview & Hunk Operations -->
+  <div>
+    {% if file_diffs %}
+      {% for fd in file_diffs %}
+        <div class="diff-container" style="margin-bottom:16px;">
+          <div class="diff-file-header">
+            <div>
+              <span style="color:var(--text-muted);">file:</span> 
+              <strong style="color:var(--accent-blue);">{{ fd.path }}</strong>
+              {% if fd.old_path %}
+                <span style="font-size:11px; color:var(--text-dim);">(renamed from {{ fd.old_path }})</span>
+              {% endif %}
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="color:var(--accent-green-bright); font-size:12px;">+{{ fd.additions }}</span>
+              <span style="color:var(--accent-red); font-size:12px;">-{{ fd.deletions }}</span>
+              {% if diff_type == 'unstaged' %}
+                <button class="btn btn-primary btn-sm" onclick="runGitAction('stage_file', {path: '{{ fd.path }}'})">Stage Whole File</button>
+              {% else %}
+                <button class="btn btn-sm" onclick="runGitAction('unstage_file', {path: '{{ fd.path }}'})">Unstage Whole File</button>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if fd.is_binary %}
+            <div style="padding:24px; text-align:center; color:var(--text-muted); font-size:13px;">
+              Binary file changes cannot be displayed.
+            </div>
+          {% else %}
+            {% for hunk in fd.hunks %}
+              <div class="diff-hunk">
+                <div class="diff-hunk-header">
+                  <span>{{ hunk.header }}</span>
+                  <div>
+                    {% if diff_type == 'unstaged' %}
+                      <button class="btn btn-sm" style="font-size:11px; padding:2px 8px;" onclick="stageSingleHunk('{{ fd.path }}', {{ forloop.counter0 }})">
+                        Stage Hunk #{{ forloop.counter }}
+                      </button>
+                    {% else %}
+                      <button class="btn btn-sm" style="font-size:11px; padding:2px 8px;" onclick="unstageSingleHunk('{{ fd.path }}', {{ forloop.counter0 }})">
+                        Unstage Hunk #{{ forloop.counter }}
+                      </button>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="diff-lines">
+                  {% for l in hunk.lines %}
+                    <div class="diff-line diff-line-{{ l.line_type }}">
+                      <span class="diff-line-num">{% if l.old_lineno %}{{ l.old_lineno }}{% endif %}</span>
+                      <span class="diff-line-num">{% if l.new_lineno %}{{ l.new_lineno }}{% endif %}</span>
+                      <span style="flex:1;">{{ l.content }}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="card" style="padding:40px; text-align:center;">
+        <h3 style="color:var(--text-muted); font-size:16px; margin-bottom:8px;">No changes to inspect</h3>
+        <p style="color:var(--text-dim); font-size:13px;">
+          Select a file from the list or make changes in your repository.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+// Expose hunk data for JS staging
+const hunkStore = {
+  {% for fd in file_diffs %}
+    "{{ fd.path }}": [
+      {% for hunk in fd.hunks %}
+        {
+          header: `{{ hunk.header|escapejs }}`,
+          old_start: {{ hunk.old_start }},
+          old_count: {{ hunk.old_count }},
+          new_start: {{ hunk.new_start }},
+          new_count: {{ hunk.new_count }},
+          lines: [
+            {% for l in hunk.lines %}
+              { type: "{{ l.line_type }}", content: `{{ l.content|escapejs }}` },
+            {% endfor %}
+          ]
+        },
+      {% endfor %}
+    ],
+  {% endfor %}
+};
+
+function stageSingleHunk(path, idx) {
+  const hunk = hunkStore[path][idx];
+  runGitAction('stage_hunk', { path: path, hunk: hunk });
+}
+
+function unstageSingleHunk(path, idx) {
+  const hunk = hunkStore[path][idx];
+  runGitAction('unstage_hunk', { path: path, hunk: hunk });
+}
+</script>
+{% endblock %}

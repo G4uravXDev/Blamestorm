@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Reflog Recovery — zit{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="font-size:22px; font-weight:700;">Reflog Recovery</h1>
+    <p style="font-size:13px; color:var(--text-muted);">
+      Git's ultimate safety net: recover deleted commits, undone changes, and accidental resets.
+    </p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">🔄 Reference Log (HEAD History)</h3>
+  </div>
+  <div class="card-body" style="padding:0;">
+    {% if reflog_entries %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Selector</th>
+            <th>SHA</th>
+            <th>Action</th>
+            <th>Message</th>
+            <th>Time</th>
+            <th>Rescue Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in reflog_entries %}
+            <tr>
+              <td>
+                <span class="font-mono" style="color:var(--accent-purple); font-weight:600; font-size:12px;">
+                  {{ r.selector }}
+                </span>
+              </td>
+              <td>
+                <span class="font-mono" style="color:var(--accent-cyan); font-size:11px;">
+                  {{ r.commit_hash }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" style="background:rgba(56,139,253,0.15); color:var(--accent-blue);">
+                  {{ r.action }}
+                </span>
+              </td>
+              <td style="font-size:12px; color:var(--text-main);">
+                {{ r.message }}
+              </td>
+              <td style="font-size:11px; color:var(--text-dim); white-space:nowrap;">
+                {{ r.relative_time }}
+              </td>
+              <td>
+                <div style="display:flex; gap:6px;">
+                  <button class="btn btn-sm" onclick="runGitAction('checkout_reflog', {selector: '{{ r.commit_hash }}'})" title="Checkout commit">Checkout</button>
+                  <button class="btn btn-sm" onclick="runGitAction('reset_reflog', {selector: '{{ r.commit_hash }}', mode: 'soft'})" title="Soft reset to this reflog entry">Soft Reset</button>
+                  <button class="btn btn-sm" onclick="runGitAction('create_branch', {name: 'rescue-{{ r.commit_hash }}', start_point: '{{ r.commit_hash }}'})" title="Create rescue branch">Rescue Branch</button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div style="padding:40px; text-align:center; color:var(--text-dim);">
+        No reflog entries available.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

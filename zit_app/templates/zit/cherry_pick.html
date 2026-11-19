@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Cherry Pick — zit{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="font-size:22px; font-weight:700;">Cherry Pick Commits</h1>
+    <p style="font-size:13px; color:var(--text-muted);">
+      Port individual commits from another branch into your current branch (<code>{{ repo_status.branch }}</code>).
+    </p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <button class="btn btn-sm" onclick="runGitAction('cherry_pick_continue')" title="Continue cherry pick">Continue Pick</button>
+    <button class="btn btn-danger btn-sm" onclick="if(confirm('Abort current cherry-pick?')) runGitAction('cherry_pick_abort')" title="Abort cherry pick">Abort Pick</button>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-body" style="display:flex; align-items:center; gap:16px;">
+    <label style="font-size:13px; font-weight:600;">Source Branch:</label>
+    <select class="form-control font-mono" style="max-width:320px;" onchange="window.location.href='?branch=' + this.value">
+      {% for b in branches %}
+        {% if not b.is_current %}
+          <option value="{{ b.name }}" {% if selected_branch == b.name %}selected{% endif %}>{{ b.name }}</option>
+        {% endif %}
+      {% endfor %}
+    </select>
+    <span style="font-size:12px; color:var(--text-muted);">
+      Showing commits present on <strong>{{ selected_branch }}</strong> but missing from <strong>{{ repo_status.branch }}</strong>.
+    </span>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Left Side: Candidate Commits -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">🍒 Available Commits ({{ candidates|length }})</h3>
+    </div>
+    <div class="card-body" style="padding:0; max-height:550px; overflow-y:auto;">
+      {% if candidates %}
+        <table class="table">
+          <thead>
+            <tr>
+              <th>SHA</th>
+              <th>Message</th>
+              <th>Author</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in candidates %}
+              <tr {% if selected_hash == c.hash %}style="background:rgba(56,139,253,0.1);"{% endif %}>
+                <td>
+                  <a href="?branch={{ selected_branch }}&commit={{ c.hash }}" class="font-mono" style="font-size:11px; color:var(--accent-blue); font-weight:600;">
+                    {{ c.short_hash }}
+                  </a>
+                </td>
+                <td>
+                  <a href="?branch={{ selected_branch }}&commit={{ c.hash }}" style="font-size:12px; color:var(--text-main);">
+                    {{ c.subject|truncatechars:40 }}
+                  </a>
+                </td>
+                <td style="font-size:11px; color:var(--text-muted);">{{ c.author_name }}</td>
+                <td>
+                  <button class="btn btn-primary btn-sm" onclick="if(confirm('Cherry-pick {{ c.short_hash }} into {{ repo_status.branch }}?')) runGitAction('cherry_pick', {commit: '{{ c.hash }}'})">
+                    Pick
+                  </button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div style="padding:30px; text-align:center; color:var(--text-dim); font-size:13px;">
+          No unmerged commits found on this branch.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Side: Commit Diff Preview -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">🔍 Commit Preview</h3>
+      {% if selected_hash %}
+        <button class="btn btn-primary btn-sm" onclick="runGitAction('cherry_pick', {commit: '{{ selected_hash }}'})">
+          Apply Cherry-Pick
+        </button>
+      {% endif %}
+    </div>
+    <div class="card-body" style="padding:0; max-height:550px; overflow-y:auto;">
+      {% if commit_diffs %}
+        {% for fd in commit_diffs %}
+          <div style="padding:8px 12px; background:var(--bg-card); border-bottom:1px solid var(--border-color); font-size:12px; font-weight:600;">
+            {{ fd.path }} <span style="color:var(--accent-green-bright);">(+{{ fd.additions }})</span> <span style="color:var(--accent-red);">(-{{ fd.deletions }})</span>
+          </div>
+          {% for hunk in fd.hunks %}
+            <div class="diff-lines" style="font-size:11px;">
+              {% for l in hunk.lines %}
+                <div class="diff-line diff-line-{{ l.line_type }}">
+                  <span>{{ l.content }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        {% endfor %}
+      {% else %}
+        <div style="padding:40px; text-align:center; color:var(--text-dim); font-size:13px;">
+          Click a commit SHA to preview its changes before picking.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

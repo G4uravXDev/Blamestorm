@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Settings — zit{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px;">
+  <h1 style="font-size:22px; font-weight:700;">⚙️ Application &amp; AI Settings</h1>
+  <p style="font-size:13px; color:var(--text-muted);">
+    Configure Google Gemini credentials, target repository path, and local safety rules.
+  </p>
+</div>
+
+<div class="grid-2">
+  <!-- Left Side: AI Settings -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">🤖 Google Gemini API Configuration</h3>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{% url 'zit:settings' %}">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label class="form-label">Google Gemini API Key</label>
+          <input type="password" name="gemini_api_key" id="geminiApiKey" class="form-control font-mono" value="{{ config.gemini_api_key }}" placeholder="AIzaSy...">
+          <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">
+            Get a free API key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio ↗</a>. Alternatively, set <code>GEMINI_API_KEY</code> in your environment.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Gemini Model</label>
+          <select name="gemini_model" class="form-control font-mono">
+            <option value="gemini-2.5-flash" {% if config.gemini_model == "gemini-2.5-flash" %}selected{% endif %}>gemini-2.5-flash (Fast, latest &amp; recommended)</option>
+            <option value="gemini-1.5-flash" {% if config.gemini_model == "gemini-1.5-flash" %}selected{% endif %}>gemini-1.5-flash (Stable fast model)</option>
+            <option value="gemini-2.0-flash" {% if config.gemini_model == "gemini-2.0-flash" %}selected{% endif %}>gemini-2.0-flash (High speed)</option>
+            <option value="gemini-1.5-pro" {% if config.gemini_model == "gemini-1.5-pro" %}selected{% endif %}>gemini-1.5-pro (High intelligence)</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <button type="button" class="btn btn-sm" onclick="testGeminiConnection()">
+            ⚡ Test API Connection
+          </button>
+          <span id="testResult" style="font-size:12px; margin-left:8px;"></span>
+        </div>
+
+        <hr style="border:none; border-top:1px solid var(--border-color); margin:16px 0;">
+
+        <div class="form-group">
+          <label class="form-label">Active Working Repository Path</label>
+          <input type="text" name="active_repo_path" class="form-control font-mono" value="{{ repo_path }}" placeholder="C:\path\to\repo">
+          <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">
+            Path to the local Git repository that Zit will manage.
+          </div>
+        </div>
+
+        <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" name="confirm_destructive" id="confirmDestructive" {% if config.confirm_destructive %}checked{% endif %}>
+          <label for="confirmDestructive" style="font-size:13px; cursor:pointer;">
+            <strong>Require confirmation for destructive operations</strong> (hard resets, branch deletions, force push)
+          </label>
+        </div>
+
+        <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" name="auto_scan_secrets" id="autoScanSecrets" {% if config.auto_scan_secrets %}checked{% endif %}>
+          <label for="autoScanSecrets" style="font-size:13px; cursor:pointer;">
+            <strong>Automatic Secret Scanning</strong> (warns before committing API keys, tokens, credentials)
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Secret Scanner Allowlist (One pattern per line)</label>
+          <textarea name="secrets_allowlist" rows="3" class="form-control font-mono" placeholder="my_dummy_test_key&#10;tests/fixtures">{{ config.secrets_allowlist }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;">
+          💾 Save Settings
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right Side: System & Architecture Info -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">ℹ️ System &amp; Stack Information</h3>
+      </div>
+      <div class="card-body" style="font-size:13px; line-height:1.6;">
+        <table class="table">
+          <tr>
+            <td><strong>Application:</strong></td>
+            <td>Blamestorm — AI Git Assistant</td>
+          </tr>
+          <tr>
+            <td><strong>Framework:</strong></td>
+            <td>Django 6.1 (Full Web Application)</td>
+          </tr>
+          <tr>
+            <td><strong>AI Provider:</strong></td>
+            <td>Google Gemini API (replaces Amazon Bedrock)</td>
+          </tr>
+          <tr>
+            <td><strong>UI Engine:</strong></td>
+            <td>Django Templates + CSS3 Dark Theme</td>
+          </tr>
+          <tr>
+            <td><strong>Git Integration:</strong></td>
+            <td>Direct Subprocess Git Runner (native git CLI)</td>
+          </tr>
+          <tr>
+            <td><strong>Secret Scanner:</strong></td>
+            <td>Local Engine (20+ pattern signatures)</td>
+          </tr>
+          <tr>
+            <td><strong>Agent Mode:</strong></td>
+            <td>Autonomous Multi-Turn ReAct Loop</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function testGeminiConnection() {
+  const resultEl = document.getElementById('testResult');
+  resultEl.style.color = 'var(--text-muted)';
+  resultEl.textContent = 'Testing connection...';
+
+  try {
+    const res = await fetch('/api/test-ai/');
+    const data = await res.json();
+    if (data.success) {
+      resultEl.style.color = 'var(--accent-green-bright)';
+      resultEl.textContent = '✓ Connected successfully! (' + (data.message || 'OK') + ')';
+    } else {
+      resultEl.style.color = 'var(--accent-red)';
+      resultEl.textContent = '✕ Error: ' + (data.error || 'Connection failed');
+    }
+  } catch (err) {
+    resultEl.style.color = 'var(--accent-red)';
+    resultEl.textContent = '✕ Network error: ' + err;
+  }
+}
+</script>
+{% endblock %}
