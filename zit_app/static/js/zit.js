@@ -74,43 +74,42 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // ── Collapsible Sidebar Helpers ──────────────────────────────────
-function updateSidebarUI(isCollapsed) {
+function updateSidebarUI(isExpanded) {
   const sidebar = document.getElementById("zitSidebar");
   if (!sidebar) return;
   const toggleIcon = document.getElementById("sidebarToggleIcon");
-  const bottomToggleText = document.getElementById("sidebarBottomToggleText");
 
-  if (isCollapsed) {
-    sidebar.classList.add("collapsed");
-    if (toggleIcon) toggleIcon.textContent = "▶";
-    if (bottomToggleText) bottomToggleText.textContent = "▶ Expand";
+  if (isExpanded) {
+    sidebar.classList.add("expanded");
+    document.body.classList.add("sidebar-expanded");
+    if (toggleIcon) toggleIcon.textContent = "❮";
   } else {
-    sidebar.classList.remove("collapsed");
-    if (toggleIcon) toggleIcon.textContent = "◀";
-    if (bottomToggleText) bottomToggleText.textContent = "◀ Collapse";
+    sidebar.classList.remove("expanded");
+    document.body.classList.remove("sidebar-expanded");
+    if (toggleIcon) toggleIcon.textContent = "❯";
   }
 }
 
 function toggleSidebar() {
   const sidebar = document.getElementById("zitSidebar");
   if (!sidebar) return;
-  const isCollapsedNow = sidebar.classList.contains("collapsed");
-  const nextCollapsed = !isCollapsedNow;
-  updateSidebarUI(nextCollapsed);
+  const isExpandedNow = sidebar.classList.contains("expanded");
+  const nextExpanded = !isExpandedNow;
+  updateSidebarUI(nextExpanded);
   try {
-    localStorage.setItem("blamestorm_sidebar_collapsed", nextCollapsed ? "true" : "false");
+    localStorage.setItem("blamestorm_sidebar_expanded", nextExpanded ? "true" : "false");
   } catch (e) {}
 }
 
 function initSidebar() {
   const sidebar = document.getElementById("zitSidebar");
   if (!sidebar) return;
-  let saved = "true";
+  let isExpanded = false;
   try {
-    const val = localStorage.getItem("blamestorm_sidebar_collapsed");
-    if (val !== null) saved = val;
+    const val = localStorage.getItem("blamestorm_sidebar_expanded");
+    if (val === "true") isExpanded = true;
   } catch (e) {}
-  updateSidebarUI(saved === "true");
+  updateSidebarUI(isExpanded);
 }
 
 // ── Modal Helpers ────────────────────────────────────────────────

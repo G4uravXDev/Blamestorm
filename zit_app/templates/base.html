@@ -8,18 +8,18 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/zit.css' %}">
+  <link rel="stylesheet" href="{% static 'css/zit.css' %}?v={% now 'U' %}">
   {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body class="{% if active_view != 'dashboard' %}has-sidebar{% endif %}">
 
   {% include "includes/navbar.html" %}
 
-  <div class="{% if active_view != 'dashboard' %}zit-layout-with-sidebar{% endif %}">
-    {% if active_view != 'dashboard' %}
-      {% include "includes/sidebar.html" %}
-    {% endif %}
+  {% if active_view != 'dashboard' %}
+    {% include "includes/sidebar.html" %}
+  {% endif %}
 
+  <div class="{% if active_view != 'dashboard' %}zit-layout-with-sidebar{% endif %}">
     <div class="{% if active_view != 'dashboard' %}zit-main-area{% endif %}" style="flex:1; display:flex; flex-direction:column; min-width:0;">
       <main class="zit-container">
         {% if messages %}
@@ -54,7 +54,7 @@
   {% include "includes/shortcuts_modal.html" %}
   {% include "includes/repo_selector_modal.html" %}
 
-  <script src="{% static 'js/zit.js' %}"></script>
+  <script src="{% static 'js/zit.js' %}?v={% now 'U' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

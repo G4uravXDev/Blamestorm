@@ -1,95 +1,295 @@
-<aside id="zitSidebar" class="zit-sidebar collapsed">
-  <div class="zit-sidebar-header">
-    <span class="sidebar-title">Navigation</span>
+<!-- Blamestorm Collapsible Vertical Sidebar (Only on non-dashboard pages) -->
+<style>
+/* Scoped vertical sidebar styles — immune to browser stylesheet cache */
+.blamestorm-sidebar {
+  position: fixed !important;
+  top: 49px !important;
+  left: 0 !important;
+  bottom: 0 !important;
+  width: 56px;
+  background-color: #121820;
+  border-right: 1px solid #263345;
+  display: flex !important;
+  flex-direction: column !important;
+  z-index: 95;
+  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.35);
+}
+
+.blamestorm-sidebar.expanded {
+  width: 220px !important;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 8px;
+  border-bottom: 1px solid #263345;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
+.sidebar-header-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #5c6c84;
+  white-space: nowrap;
+  display: none;
+  padding-left: 6px;
+}
+
+.blamestorm-sidebar.expanded .sidebar-header-title {
+  display: block;
+}
+
+.sidebar-toggle-btn {
+  background: #161f2c;
+  border: 1px solid #263345;
+  border-radius: 4px;
+  color: #8b9bb4;
+  cursor: pointer;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  width: 38px;
+  height: 28px;
+  margin: 0 auto;
+  transition: all 0.15s ease;
+}
+.blamestorm-sidebar.expanded .sidebar-toggle-btn {
+  margin: 0;
+}
+.sidebar-toggle-btn:hover {
+  background: #1c2738;
+  color: #e6edf3;
+  border-color: #3b4d66;
+}
+
+.sidebar-menu {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Custom sleek scrollbar for sidebar */
+.sidebar-menu::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-menu::-webkit-scrollbar-thumb {
+  background: #263345;
+  border-radius: 2px;
+}
+
+.sidebar-item {
+  display: flex !important;
+  align-items: center;
+  padding: 8px 6px;
+  border-radius: 6px;
+  color: #8b9bb4;
+  text-decoration: none !important;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  position: relative;
+  min-height: 38px;
+  box-sizing: border-box;
+}
+
+.sidebar-item:hover {
+  background-color: #1c2738;
+  color: #e6edf3;
+}
+
+.sidebar-item.active {
+  background-color: #161f2c;
+  color: #388bfd;
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 #388bfd;
+}
+
+.sidebar-item-icon {
+  font-size: 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  min-width: 38px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.sidebar-item-label {
+  margin-left: 8px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: none;
+}
+
+.sidebar-item-badge {
+  margin-left: auto;
+  padding-right: 4px;
+  display: none;
+}
+
+.blamestorm-sidebar.expanded .sidebar-item-label {
+  display: block;
+}
+.blamestorm-sidebar.expanded .sidebar-item-badge {
+  display: inline-block;
+}
+
+/* Floating Tooltip in collapsed mode */
+.blamestorm-sidebar:not(.expanded) .sidebar-item:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 54px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1c2738;
+  color: #e6edf3;
+  border: 1px solid #3b4d66;
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  z-index: 99999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+/* Push main content beside the fixed sidebar */
+.zit-layout-with-sidebar .zit-main-area {
+  margin-left: 56px;
+  transition: margin-left 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+body.sidebar-expanded .zit-layout-with-sidebar .zit-main-area {
+  margin-left: 220px;
+}
+</style>
+
+<aside id="zitSidebar" class="blamestorm-sidebar" aria-label="Feature Navigation">
+  <div class="sidebar-header">
+    <span class="sidebar-header-title">Menu</span>
     <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Toggle Sidebar (Expand / Collapse)">
-      <span id="sidebarToggleIcon">▶</span>
+      <span id="sidebarToggleIcon">❯</span>
     </button>
   </div>
 
-  <nav class="zit-sidebar-nav">
-    <a href="{% url 'zit:dashboard' %}" class="sidebar-link {% if active_view == 'dashboard' %}active{% endif %}" data-tooltip="Dashboard (Home)">
-      <span class="sidebar-link-icon">🏠</span>
-      <span class="sidebar-link-text">Dashboard</span>
+  <nav class="sidebar-menu">
+    <a href="{% url 'zit:dashboard' %}" class="sidebar-item {% if active_view == 'dashboard' %}active{% endif %}" data-tooltip="Dashboard (Home)">
+      <span class="sidebar-item-icon">🏠</span>
+      <span class="sidebar-item-label">Dashboard</span>
     </a>
-    <a href="{% url 'zit:staging' %}" class="sidebar-link {% if active_view == 'staging' %}active{% endif %}" data-tooltip="Smart Staging (s)">
-      <span class="sidebar-link-icon">📦</span>
-      <span class="sidebar-link-text">Staging</span>
-      <span class="sidebar-link-badge"><kbd>s</kbd></span>
+
+    <a href="{% url 'zit:staging' %}" class="sidebar-item {% if active_view == 'staging' %}active{% endif %}" data-tooltip="Smart Staging (s)">
+      <span class="sidebar-item-icon">📦</span>
+      <span class="sidebar-item-label">Staging</span>
+      <span class="sidebar-item-badge"><kbd>s</kbd></span>
     </a>
-    <a href="{% url 'zit:commit' %}" class="sidebar-link {% if active_view == 'commit' %}active{% endif %}" data-tooltip="Guided Commit (c)">
-      <span class="sidebar-link-icon">✍️</span>
-      <span class="sidebar-link-text">Commit</span>
-      <span class="sidebar-link-badge"><kbd>c</kbd></span>
+
+    <a href="{% url 'zit:commit' %}" class="sidebar-item {% if active_view == 'commit' %}active{% endif %}" data-tooltip="Guided Commit (c)">
+      <span class="sidebar-item-icon">✍️</span>
+      <span class="sidebar-item-label">Commit</span>
+      <span class="sidebar-item-badge"><kbd>c</kbd></span>
     </a>
-    <a href="{% url 'zit:branches' %}" class="sidebar-link {% if active_view == 'branches' %}active{% endif %}" data-tooltip="Branch Manager (b)">
-      <span class="sidebar-link-icon">🌿</span>
-      <span class="sidebar-link-text">Branches</span>
-      <span class="sidebar-link-badge"><kbd>b</kbd></span>
+
+    <a href="{% url 'zit:branches' %}" class="sidebar-item {% if active_view == 'branches' %}active{% endif %}" data-tooltip="Branches (b)">
+      <span class="sidebar-item-icon">🌿</span>
+      <span class="sidebar-item-label">Branches</span>
+      <span class="sidebar-item-badge"><kbd>b</kbd></span>
     </a>
-    <a href="{% url 'zit:timeline' %}" class="sidebar-link {% if active_view == 'timeline' %}active{% endif %}" data-tooltip="Commit Log & Graph (l)">
-      <span class="sidebar-link-icon">📜</span>
-      <span class="sidebar-link-text">Log &amp; Graph</span>
-      <span class="sidebar-link-badge"><kbd>l</kbd></span>
+
+    <a href="{% url 'zit:timeline' %}" class="sidebar-item {% if active_view == 'timeline' %}active{% endif %}" data-tooltip="Log & Graph (l)">
+      <span class="sidebar-item-icon">📜</span>
+      <span class="sidebar-item-label">Log &amp; Graph</span>
+      <span class="sidebar-item-badge"><kbd>l</kbd></span>
     </a>
-    <a href="{% url 'zit:time_travel' %}" class="sidebar-link {% if active_view == 'time_travel' %}active{% endif %}" data-tooltip="Time Travel / Safe Reset (t)">
-      <span class="sidebar-link-icon">⏳</span>
-      <span class="sidebar-link-text">Time Travel</span>
-      <span class="sidebar-link-badge"><kbd>t</kbd></span>
+
+    <a href="{% url 'zit:time_travel' %}" class="sidebar-item {% if active_view == 'time_travel' %}active{% endif %}" data-tooltip="Time Travel / Safe Reset (t)">
+      <span class="sidebar-item-icon">⏳</span>
+      <span class="sidebar-item-label">Time Travel</span>
+      <span class="sidebar-item-badge"><kbd>t</kbd></span>
     </a>
-    <a href="{% url 'zit:reflog' %}" class="sidebar-link {% if active_view == 'reflog' %}active{% endif %}" data-tooltip="Reflog Recovery (r)">
-      <span class="sidebar-link-icon">🔄</span>
-      <span class="sidebar-link-text">Reflog</span>
-      <span class="sidebar-link-badge"><kbd>r</kbd></span>
+
+    <a href="{% url 'zit:reflog' %}" class="sidebar-item {% if active_view == 'reflog' %}active{% endif %}" data-tooltip="Reflog Recovery (r)">
+      <span class="sidebar-item-icon">🔄</span>
+      <span class="sidebar-item-label">Reflog</span>
+      <span class="sidebar-item-badge"><kbd>r</kbd></span>
     </a>
-    <a href="{% url 'zit:stash' %}" class="sidebar-link {% if active_view == 'stash' %}active{% endif %}" data-tooltip="Stash Manager (x)">
-      <span class="sidebar-link-icon">🗄️</span>
-      <span class="sidebar-link-text">Stash</span>
-      <span class="sidebar-link-badge"><kbd>x</kbd></span>
+
+    <a href="{% url 'zit:stash' %}" class="sidebar-item {% if active_view == 'stash' %}active{% endif %}" data-tooltip="Stash Manager (x)">
+      <span class="sidebar-item-icon">🗄️</span>
+      <span class="sidebar-item-label">Stash</span>
+      <span class="sidebar-item-badge"><kbd>x</kbd></span>
     </a>
-    <a href="{% url 'zit:merge_resolve' %}" class="sidebar-link {% if active_view == 'merge_resolve' %}active{% endif %}" data-tooltip="Merge Conflict Resolver (m)">
-      <span class="sidebar-link-icon">🔀</span>
-      <span class="sidebar-link-text">Merge Resolve</span>
-      <span class="sidebar-link-badge"><kbd>m</kbd></span>
+
+    <a href="{% url 'zit:merge_resolve' %}" class="sidebar-item {% if active_view == 'merge_resolve' %}active{% endif %}" data-tooltip="Merge Resolve (m)">
+      <span class="sidebar-item-icon">🔀</span>
+      <span class="sidebar-item-label">Merge Resolve</span>
+      <span class="sidebar-item-badge"><kbd>m</kbd></span>
     </a>
-    <a href="{% url 'zit:bisect' %}" class="sidebar-link {% if active_view == 'bisect' %}active{% endif %}" data-tooltip="Git Bisect Debugger (B)">
-      <span class="sidebar-link-icon">🎯</span>
-      <span class="sidebar-link-text">Git Bisect</span>
-      <span class="sidebar-link-badge"><kbd>B</kbd></span>
+
+    <a href="{% url 'zit:bisect' %}" class="sidebar-item {% if active_view == 'bisect' %}active{% endif %}" data-tooltip="Git Bisect (B)">
+      <span class="sidebar-item-icon">🎯</span>
+      <span class="sidebar-item-label">Git Bisect</span>
+      <span class="sidebar-item-badge"><kbd>B</kbd></span>
     </a>
-    <a href="{% url 'zit:cherry_pick' %}" class="sidebar-link {% if active_view == 'cherry_pick' %}active{% endif %}" data-tooltip="Cherry Pick Commits (p)">
-      <span class="sidebar-link-icon">🍒</span>
-      <span class="sidebar-link-text">Cherry Pick</span>
-      <span class="sidebar-link-badge"><kbd>p</kbd></span>
+
+    <a href="{% url 'zit:cherry_pick' %}" class="sidebar-item {% if active_view == 'cherry_pick' %}active{% endif %}" data-tooltip="Cherry Pick (p)">
+      <span class="sidebar-item-icon">🍒</span>
+      <span class="sidebar-item-label">Cherry Pick</span>
+      <span class="sidebar-item-badge"><kbd>p</kbd></span>
     </a>
-    <a href="{% url 'zit:workflow_builder' %}" class="sidebar-link {% if active_view == 'workflow_builder' %}active{% endif %}" data-tooltip="CI/CD Workflow Builder (w)">
-      <span class="sidebar-link-icon">⚙️</span>
-      <span class="sidebar-link-text">Workflow</span>
-      <span class="sidebar-link-badge"><kbd>w</kbd></span>
+
+    <a href="{% url 'zit:workflow_builder' %}" class="sidebar-item {% if active_view == 'workflow_builder' %}active{% endif %}" data-tooltip="CI/CD Workflow (w)">
+      <span class="sidebar-item-icon">⚙️</span>
+      <span class="sidebar-item-label">Workflow</span>
+      <span class="sidebar-item-badge"><kbd>w</kbd></span>
     </a>
-    <a href="{% url 'zit:github' %}" class="sidebar-link {% if active_view == 'github' %}active{% endif %}" data-tooltip="GitHub Integration (g)">
-      <span class="sidebar-link-icon">🐙</span>
-      <span class="sidebar-link-text">GitHub</span>
-      <span class="sidebar-link-badge"><kbd>g</kbd></span>
+
+    <a href="{% url 'zit:github' %}" class="sidebar-item {% if active_view == 'github' %}active{% endif %}" data-tooltip="GitHub Integration (g)">
+      <span class="sidebar-item-icon">🐙</span>
+      <span class="sidebar-item-label">GitHub</span>
+      <span class="sidebar-item-badge"><kbd>g</kbd></span>
     </a>
-    <a href="{% url 'zit:ai_mentor' %}" class="sidebar-link {% if active_view == 'ai_mentor' %}active{% endif %}" data-tooltip="AI Mentor (a)" style="color:var(--accent-purple);">
-      <span class="sidebar-link-icon">🤖</span>
-      <span class="sidebar-link-text">AI Mentor</span>
-      <span class="sidebar-link-badge"><kbd>a</kbd></span>
+
+    <a href="{% url 'zit:ai_mentor' %}" class="sidebar-item {% if active_view == 'ai_mentor' %}active{% endif %}" data-tooltip="AI Mentor (a)" style="color:#a371f7;">
+      <span class="sidebar-item-icon">🤖</span>
+      <span class="sidebar-item-label">AI Mentor</span>
+      <span class="sidebar-item-badge"><kbd>a</kbd></span>
     </a>
-    <a href="{% url 'zit:agent' %}" class="sidebar-link {% if active_view == 'agent' %}active{% endif %}" data-tooltip="Autonomous Agent Mode (A)" style="color:var(--accent-cyan); font-weight:700;">
-      <span class="sidebar-link-icon">⚡</span>
-      <span class="sidebar-link-text">Agent Mode</span>
-      <span class="sidebar-link-badge"><kbd>A</kbd></span>
+
+    <a href="{% url 'zit:agent' %}" class="sidebar-item {% if active_view == 'agent' %}active{% endif %}" data-tooltip="Autonomous Agent (A)" style="color:#39c5cf; font-weight:700;">
+      <span class="sidebar-item-icon">⚡</span>
+      <span class="sidebar-item-label">Agent Mode</span>
+      <span class="sidebar-item-badge"><kbd>A</kbd></span>
     </a>
-    <a href="{% url 'zit:settings' %}" class="sidebar-link {% if active_view == 'settings' %}active{% endif %}" data-tooltip="Settings &amp; Gemini Model">
-      <span class="sidebar-link-icon">🛠️</span>
-      <span class="sidebar-link-text">Settings</span>
+
+    <a href="{% url 'zit:settings' %}" class="sidebar-item {% if active_view == 'settings' %}active{% endif %}" data-tooltip="Settings & Gemini Model">
+      <span class="sidebar-item-icon">🛠️</span>
+      <span class="sidebar-item-label">Settings</span>
     </a>
   </nav>
-
-  <div style="padding:10px; border-top:1px solid var(--border-color); text-align:center;">
-    <button class="sidebar-toggle-btn" style="width:100%;" onclick="toggleSidebar()" title="Toggle Sidebar">
-      <span id="sidebarBottomToggleText" style="font-size:11px; white-space:nowrap;">◀ Collapse</span>
-    </button>
-  </div>
 </aside>
