@@ -198,12 +198,23 @@ class GeminiClient:
 
 
 def get_ai_client(request=None) -> GeminiClient:
-    """Helper to instantiate GeminiClient from request session or env."""
+    """Helper to instantiate GeminiClient from request session, DB config, or env."""
     api_key = None
-    model = DEFAULT_MODEL
+    model = None
 
     if request and hasattr(request, "session"):
         api_key = request.session.get("gemini_api_key")
-        model = request.session.get("gemini_model", DEFAULT_MODEL)
+        model = request.session.get("gemini_model")
 
-    return GeminiClient(api_key=api_key, model=model)
+    if not api_key or not model:
+        try:
+            from ..models import ZitConfig
+            config = ZitConfig.get_solo()
+            if not api_key and config.gemini_api_key:
+                api_key = config.gemini_api_key
+            if not model and config.gemini_model:
+                model = config.gemini_model
+        except Exception:
+            pass
+
+    return GeminiClient(api_key=api_key, model=model or DEFAULT_MODEL)

@@ -30,12 +30,24 @@
 
         <div class="form-group">
           <label class="form-label">Gemini Model</label>
-          <select name="gemini_model" class="form-control font-mono">
-            <option value="gemini-2.5-flash" {% if config.gemini_model == "gemini-2.5-flash" %}selected{% endif %}>gemini-2.5-flash (Fast, latest &amp; recommended)</option>
-            <option value="gemini-1.5-flash" {% if config.gemini_model == "gemini-1.5-flash" %}selected{% endif %}>gemini-1.5-flash (Stable fast model)</option>
-            <option value="gemini-2.0-flash" {% if config.gemini_model == "gemini-2.0-flash" %}selected{% endif %}>gemini-2.0-flash (High speed)</option>
-            <option value="gemini-1.5-pro" {% if config.gemini_model == "gemini-1.5-pro" %}selected{% endif %}>gemini-1.5-pro (High intelligence)</option>
+          <select name="gemini_model" id="geminiModelSelect" class="form-control font-mono" onchange="toggleCustomModelInput()">
+            {% for val, label in standard_models %}
+              <option value="{{ val }}" {% if config.gemini_model == val and not is_custom_model %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+            <option value="custom" {% if is_custom_model %}selected{% endif %}>-- Custom / Other Gemini Model (Enter below) --</option>
           </select>
+        </div>
+
+        <!-- Custom Model Input (Shown when custom option selected) -->
+        <div class="form-group" id="customModelGroup" style="{% if not is_custom_model %}display:none;{% endif %} background:var(--bg-primary); border:1px dashed var(--accent-blue); padding:12px; border-radius:var(--radius-sm); margin-top:-6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label class="form-label" style="color:var(--accent-blue); margin:0;">Custom Model Identifier</label>
+            <span class="badge" style="background:rgba(56,139,253,0.15); color:var(--accent-blue);">Custom Model</span>
+          </div>
+          <input type="text" name="custom_gemini_model" id="customGeminiModel" class="form-control font-mono" value="{% if is_custom_model %}{{ config.gemini_model }}{% endif %}" placeholder="e.g. gemini-2.0-flash-thinking-exp, gemini-exp-1206, tunedModels/my-model...">
+          <div style="font-size:11px; color:var(--text-dim); margin-top:6px;">
+            Type any Gemini model name or tuned model endpoint from Google AI Studio. It will be used directly for all AI queries.
+          </div>
         </div>
 
         <div style="margin-bottom:16px;">
@@ -102,6 +114,10 @@
             <td>Google Gemini API (replaces Amazon Bedrock)</td>
           </tr>
           <tr>
+            <td><strong>Configured Model:</strong></td>
+            <td class="font-mono" style="color:var(--accent-cyan); font-weight:600;">{{ config.gemini_model }}</td>
+          </tr>
+          <tr>
             <td><strong>UI Engine:</strong></td>
             <td>Django Templates + CSS3 Dark Theme</td>
           </tr>
@@ -124,17 +140,51 @@
 </div>
 
 <script>
+function toggleCustomModelInput() {
+  const select = document.getElementById('geminiModelSelect');
+  const group = document.getElementById('customModelGroup');
+  const customInput = document.getElementById('customGeminiModel');
+  if (select.value === 'custom') {
+    group.style.display = 'block';
+    customInput.focus();
+  } else {
+    group.style.display = 'none';
+  }
+}
+
 async function testGeminiConnection() {
   const resultEl = document.getElementById('testResult');
+  const apiKey = document.getElementById('geminiApiKey').value.trim();
+  const select = document.getElementById('geminiModelSelect');
+  const customInput = document.getElementById('customGeminiModel');
+
+  let chosenModel = select.value;
+  if (chosenModel === 'custom') {
+    chosenModel = customInput.value.trim();
+    if (!chosenModel) {
+      resultEl.style.color = 'var(--accent-red)';
+      resultEl.textContent = '✕ Please type a custom model identifier first';
+      customInput.focus();
+      return;
+    }
+  }
+
   resultEl.style.color = 'var(--text-muted)';
-  resultEl.textContent = 'Testing connection...';
+  resultEl.textContent = `Testing connection to [${chosenModel}]...`;
 
   try {
-    const res = await fetch('/api/test-ai/');
+    const res = await fetch('/api/test-ai/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: apiKey,
+        model: chosenModel
+      })
+    });
     const data = await res.json();
     if (data.success) {
       resultEl.style.color = 'var(--accent-green-bright)';
-      resultEl.textContent = '✓ Connected successfully! (' + (data.message || 'OK') + ')';
+      resultEl.textContent = `✓ Connected to [${data.model || chosenModel}]! (${data.message || 'OK'})`;
     } else {
       resultEl.style.color = 'var(--accent-red)';
       resultEl.textContent = '✕ Error: ' + (data.error || 'Connection failed');

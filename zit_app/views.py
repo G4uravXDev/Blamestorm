@@ -412,6 +412,16 @@ def agent_view(request):
     return render(request, "zit/agent.html", context)
 
 
+STANDARD_GEMINI_MODELS = [
+    ("gemini-2.5-flash", "gemini-2.5-flash (Fast, latest & recommended)"),
+    ("gemini-2.0-flash", "gemini-2.0-flash (High speed)"),
+    ("gemini-1.5-flash", "gemini-1.5-flash (Stable fast model)"),
+    ("gemini-1.5-pro", "gemini-1.5-pro (High intelligence)"),
+    ("gemini-2.0-flash-lite", "gemini-2.0-flash-lite (Lightweight, low latency)"),
+]
+STANDARD_MODEL_KEYS = [k for k, _ in STANDARD_GEMINI_MODELS]
+
+
 def settings_view(request):
     """Application and Gemini API settings view."""
     config = ZitConfig.get_solo()
@@ -419,7 +429,14 @@ def settings_view(request):
 
     if request.method == "POST":
         gemini_key = request.POST.get("gemini_api_key", "").strip()
-        gemini_model = request.POST.get("gemini_model", "gemini-2.5-flash").strip()
+        gemini_model_choice = request.POST.get("gemini_model", "").strip()
+        custom_model = request.POST.get("custom_gemini_model", "").strip()
+
+        if gemini_model_choice == "custom":
+            gemini_model = custom_model or "gemini-2.5-flash"
+        else:
+            gemini_model = gemini_model_choice or custom_model or "gemini-2.5-flash"
+
         confirm_dest = request.POST.get("confirm_destructive") == "on"
         auto_scan = request.POST.get("auto_scan_secrets") == "on"
         allowlist = request.POST.get("secrets_allowlist", "").strip()
@@ -439,13 +456,17 @@ def settings_view(request):
         if new_repo and os.path.exists(new_repo):
             request.session["current_repo_path"] = os.path.abspath(new_repo)
 
-        messages.success(request, "Settings updated successfully.")
+        messages.success(request, f"Settings updated successfully (Model: {gemini_model}).")
         return redirect("zit:settings")
+
+    is_custom_model = bool(config.gemini_model and config.gemini_model not in STANDARD_MODEL_KEYS)
 
     context = {
         "active_view": "settings",
         "config": config,
         "repo_path": repo_path,
+        "standard_models": STANDARD_GEMINI_MODELS,
+        "is_custom_model": is_custom_model,
     }
     return render(request, "zit/settings.html", context)
 
@@ -836,8 +857,27 @@ def api_switch_repo(request):
 
 @csrf_exempt
 def api_test_ai(request):
-    """Test Gemini API connection."""
-    ai_client = get_ai_client(request)
+    """Test Gemini API connection with optional credentials/model in request payload."""
+    api_key = None
+    model = None
+
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            api_key = data.get("api_key", "").strip()
+            model = data.get("model", "").strip()
+        except Exception:
+            api_key = request.POST.get("api_key", "").strip()
+            model = request.POST.get("model", "").strip()
+
+    if api_key or model:
+        base_client = get_ai_client(request)
+        test_key = api_key or base_client.api_key
+        test_model = model or base_client.model
+        ai_client = GeminiClient(api_key=test_key, model=test_model)
+    else:
+        ai_client = get_ai_client(request)
+
     result = ai_client.test_connection()
     return JsonResponse(result)
 

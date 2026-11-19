@@ -1,11 +1,16 @@
 <header class="zit-navbar">
   <div class="nav-brand">
+    {% if active_view != 'dashboard' %}
+      <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Toggle Sidebar (Expand / Collapse)" style="margin-right:4px;">
+        <span style="font-size:14px; line-height:1;">☰</span>
+      </button>
+    {% endif %}
     <a href="{% url 'zit:dashboard' %}" class="nav-logo">
       <span style="color:#39c5cf;">&gt;</span>Blamestorm<span style="color:var(--accent-green-bright); font-size:12px;">.py</span>
     </a>
     <div class="nav-repo-info" onclick="openModal('repoModal')" title="Click to switch working repository">
       <span style="color:var(--accent-blue);">📁</span>
-      <span class="font-mono" style="font-size:12px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+      <span class="font-mono" style="font-size:12px; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
         {{ current_repo_path }}
       </span>
       {% if repo_status %}
@@ -19,59 +24,16 @@
     </div>
   </div>
 
-  <nav class="nav-links">
-    <a href="{% url 'zit:dashboard' %}" class="nav-item {% if active_view == 'dashboard' %}active{% endif %}" title="Dashboard (home)">
-      <span>Dashboard</span>
-    </a>
-    <a href="{% url 'zit:staging' %}" class="nav-item {% if active_view == 'staging' %}active{% endif %}" title="Staging (s)">
-      <span>Staging</span> <kbd>s</kbd>
-    </a>
-    <a href="{% url 'zit:commit' %}" class="nav-item {% if active_view == 'commit' %}active{% endif %}" title="Commit Editor (c)">
-      <span>Commit</span> <kbd>c</kbd>
-    </a>
-    <a href="{% url 'zit:branches' %}" class="nav-item {% if active_view == 'branches' %}active{% endif %}" title="Branches (b)">
-      <span>Branches</span> <kbd>b</kbd>
-    </a>
-    <a href="{% url 'zit:timeline' %}" class="nav-item {% if active_view == 'timeline' %}active{% endif %}" title="Timeline (l)">
-      <span>Log</span> <kbd>l</kbd>
-    </a>
-    <a href="{% url 'zit:time_travel' %}" class="nav-item {% if active_view == 'time_travel' %}active{% endif %}" title="Time Travel (t)">
-      <span>Time Travel</span> <kbd>t</kbd>
-    </a>
-    <a href="{% url 'zit:reflog' %}" class="nav-item {% if active_view == 'reflog' %}active{% endif %}" title="Reflog (r)">
-      <span>Reflog</span> <kbd>r</kbd>
-    </a>
-    <a href="{% url 'zit:stash' %}" class="nav-item {% if active_view == 'stash' %}active{% endif %}" title="Stash (x)">
-      <span>Stash</span> <kbd>x</kbd>
-    </a>
-    <a href="{% url 'zit:merge_resolve' %}" class="nav-item {% if active_view == 'merge_resolve' %}active{% endif %}" title="Merge Resolver (m)">
-      <span>Merge</span> <kbd>m</kbd>
-    </a>
-    <a href="{% url 'zit:bisect' %}" class="nav-item {% if active_view == 'bisect' %}active{% endif %}" title="Git Bisect (B)">
-      <span>Bisect</span> <kbd>B</kbd>
-    </a>
-    <a href="{% url 'zit:cherry_pick' %}" class="nav-item {% if active_view == 'cherry_pick' %}active{% endif %}" title="Cherry Pick (p)">
-      <span>Cherry Pick</span> <kbd>p</kbd>
-    </a>
-    <a href="{% url 'zit:workflow_builder' %}" class="nav-item {% if active_view == 'workflow_builder' %}active{% endif %}" title="Workflow Builder (w)">
-      <span>Workflow</span> <kbd>w</kbd>
-    </a>
-    <a href="{% url 'zit:github' %}" class="nav-item {% if active_view == 'github' %}active{% endif %}" title="GitHub Integration (g)">
-      <span>GitHub</span> <kbd>g</kbd>
-    </a>
-    <a href="{% url 'zit:ai_mentor' %}" class="nav-item {% if active_view == 'ai_mentor' %}active{% endif %}" title="AI Mentor (a)" style="color:var(--accent-purple);">
-      <span>🤖 Mentor</span> <kbd>a</kbd>
-    </a>
-    <a href="{% url 'zit:agent' %}" class="nav-item {% if active_view == 'agent' %}active{% endif %}" title="Agent Mode (A)" style="color:var(--accent-cyan); font-weight:700;">
-      <span>⚡ Agent</span> <kbd>A</kbd>
-    </a>
-  </nav>
-
   <div class="nav-actions">
+    {% if active_view != 'dashboard' %}
+      <a href="{% url 'zit:dashboard' %}" class="btn btn-sm" title="Return to Dashboard">
+        🏠 Dashboard
+      </a>
+    {% endif %}
     <button class="btn btn-sm" onclick="openModal('shortcutsModal')" title="Keyboard Shortcuts (?)">
       <kbd>?</kbd> Help
     </button>
-    <a href="{% url 'zit:settings' %}" class="btn btn-sm" title="Settings">
+    <a href="{% url 'zit:settings' %}" class="btn btn-sm" title="Settings & Gemini Model">
       ⚙️
     </a>
   </div>

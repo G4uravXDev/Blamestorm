@@ -48,12 +48,13 @@ Open your browser to [http://localhost:8000](http://localhost:8000).
 
 ## 🧠 Google Gemini AI Setup
 
-Instead of Amazon Bedrock (used in the original Rust Lambda backend), this application runs directly on **Google Gemini API** (`gemini-2.5-flash`, `gemini-1.5-flash`, `gemini-2.0-flash`, or `gemini-1.5-pro`).
+Instead of Amazon Bedrock (used in the original Rust Lambda backend), this application runs directly on **Google Gemini API** (`gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-1.5-pro`, or **any custom / experimental Gemini model ID** entered in Settings).
 
 ### Option A: Via Settings UI
 1. Navigate to **Settings** (`⚙️` icon in navbar or `/settings/`)
 2. Enter your free Google Gemini API Key from [Google AI Studio](https://aistudio.google.com/apikey)
-3. Click **Test API Connection** and **Save Settings**
+3. Select a preset Gemini model or choose **`-- Custom / Other Gemini Model --`** to type any experimental, preview, or fine-tuned model ID (e.g. `gemini-2.0-flash-thinking-exp`, `gemini-exp-1206`, `tunedModels/my-model`)
+4. Click **Test API Connection** to verify and then click **Save Settings**
 
 ### Option B: Environment Variable
 ```bash

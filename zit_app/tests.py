@@ -100,3 +100,39 @@ class ViewTests(TestCase):
         for v in views_to_test:
             resp = self.client.get(reverse(v))
             self.assertEqual(resp.status_code, 200, f"View {v} failed with status {resp.status_code}")
+
+    def test_custom_gemini_model_settings(self):
+        # 1. Post a custom model via settings form
+        post_data = {
+            "gemini_api_key": "AIzaTestKey123",
+            "gemini_model": "custom",
+            "custom_gemini_model": "gemini-2.0-flash-thinking-exp",
+            "confirm_destructive": "on",
+            "auto_scan_secrets": "on",
+            "secrets_allowlist": "",
+            "active_repo_path": ""
+        }
+        resp = self.client.post(reverse("zit:settings"), post_data)
+        self.assertEqual(resp.status_code, 302)
+
+        config = ZitConfig.get_solo()
+        self.assertEqual(config.gemini_model, "gemini-2.0-flash-thinking-exp")
+        self.assertEqual(self.client.session.get("gemini_model"), "gemini-2.0-flash-thinking-exp")
+
+        # 2. Check settings view detects custom model
+        get_resp = self.client.get(reverse("zit:settings"))
+        self.assertEqual(get_resp.status_code, 200)
+        self.assertTrue(get_resp.context["is_custom_model"])
+
+    def test_api_test_ai_endpoint(self):
+        # Test endpoint with custom model in payload
+        import json
+        payload = json.dumps({
+            "api_key": "",
+            "model": "gemini-exp-1206"
+        })
+        resp = self.client.post(reverse("zit:api_test_ai"), payload, content_type="application/json")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertFalse(data["success"])
+        self.assertIn("No Gemini API key configured", data["error"])

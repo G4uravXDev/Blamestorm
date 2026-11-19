@@ -4,7 +4,7 @@
     <span>•</span>
     <span>AI Provider: 
       {% if gemini_configured %}
-        <span style="color:var(--accent-green-bright); font-weight:600;">Google Gemini (Active)</span>
+        <span style="color:var(--accent-green-bright); font-weight:600;">Google Gemini (Model: <span class="font-mono">{{ gemini_model }}</span>)</span>
       {% else %}
         <a href="{% url 'zit:settings' %}" style="color:var(--accent-yellow);">Configure Gemini API Key</a>
       {% endif %}

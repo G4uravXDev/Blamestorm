@@ -15,33 +15,41 @@
 
   {% include "includes/navbar.html" %}
 
-  <main class="zit-container">
-    {% if messages %}
-      {% for message in messages %}
-        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
-          <span>{{ message }}</span>
-          <button type="button" class="btn btn-sm" onclick="this.parentElement.remove()">✕</button>
-        </div>
-      {% endfor %}
+  <div class="{% if active_view != 'dashboard' %}zit-layout-with-sidebar{% endif %}">
+    {% if active_view != 'dashboard' %}
+      {% include "includes/sidebar.html" %}
     {% endif %}
 
-    {% if not repo_is_valid %}
-      <div class="alert alert-warning" style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <strong>Not a Git Repository:</strong> The current directory <code>{{ current_repo_path }}</code> is not initialized as a git repository.
-        </div>
-        <div style="display:flex; gap:8px;">
-          <button class="btn btn-primary btn-sm" onclick="runGitAction('init_repo')">⚡ Initialize Git Here</button>
-          <button class="btn btn-blue btn-sm" onclick="openModal('repoModal')">📂 Select Existing Repo</button>
-        </div>
-      </div>
-    {% endif %}
+    <div class="{% if active_view != 'dashboard' %}zit-main-area{% endif %}" style="flex:1; display:flex; flex-direction:column; min-width:0;">
+      <main class="zit-container">
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
+              <span>{{ message }}</span>
+              <button type="button" class="btn btn-sm" onclick="this.parentElement.remove()">✕</button>
+            </div>
+          {% endfor %}
+        {% endif %}
 
-    {% block content %}
-    {% endblock %}
-  </main>
+        {% if not repo_is_valid %}
+          <div class="alert alert-warning" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong>Not a Git Repository:</strong> The current directory <code>{{ current_repo_path }}</code> is not initialized as a git repository.
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary btn-sm" onclick="runGitAction('init_repo')">⚡ Initialize Git Here</button>
+              <button class="btn btn-blue btn-sm" onclick="openModal('repoModal')">📂 Select Existing Repo</button>
+            </div>
+          </div>
+        {% endif %}
 
-  {% include "includes/footer.html" %}
+        {% block content %}
+        {% endblock %}
+      </main>
+
+      {% include "includes/footer.html" %}
+    </div>
+  </div>
 
   {% include "includes/shortcuts_modal.html" %}
   {% include "includes/repo_selector_modal.html" %}

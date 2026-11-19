@@ -4,6 +4,9 @@
  */
 
 document.addEventListener("DOMContentLoaded", function () {
+  // Initialize collapsible sidebar state
+  initSidebar();
+
   // ── Keyboard Shortcuts ──────────────────────────────────────────
   document.addEventListener("keydown", function (e) {
     // Ignore keystrokes when focused on input, textarea, or contentEditable
@@ -69,6 +72,46 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
+
+// ── Collapsible Sidebar Helpers ──────────────────────────────────
+function updateSidebarUI(isCollapsed) {
+  const sidebar = document.getElementById("zitSidebar");
+  if (!sidebar) return;
+  const toggleIcon = document.getElementById("sidebarToggleIcon");
+  const bottomToggleText = document.getElementById("sidebarBottomToggleText");
+
+  if (isCollapsed) {
+    sidebar.classList.add("collapsed");
+    if (toggleIcon) toggleIcon.textContent = "▶";
+    if (bottomToggleText) bottomToggleText.textContent = "▶ Expand";
+  } else {
+    sidebar.classList.remove("collapsed");
+    if (toggleIcon) toggleIcon.textContent = "◀";
+    if (bottomToggleText) bottomToggleText.textContent = "◀ Collapse";
+  }
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById("zitSidebar");
+  if (!sidebar) return;
+  const isCollapsedNow = sidebar.classList.contains("collapsed");
+  const nextCollapsed = !isCollapsedNow;
+  updateSidebarUI(nextCollapsed);
+  try {
+    localStorage.setItem("blamestorm_sidebar_collapsed", nextCollapsed ? "true" : "false");
+  } catch (e) {}
+}
+
+function initSidebar() {
+  const sidebar = document.getElementById("zitSidebar");
+  if (!sidebar) return;
+  let saved = "true";
+  try {
+    const val = localStorage.getItem("blamestorm_sidebar_collapsed");
+    if (val !== null) saved = val;
+  } catch (e) {}
+  updateSidebarUI(saved === "true");
+}
 
 // ── Modal Helpers ────────────────────────────────────────────────
 function openModal(modalId) {

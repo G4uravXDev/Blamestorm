@@ -4,7 +4,7 @@ from django.db import models
 class ZitConfig(models.Model):
     """Local configuration options for zit."""
     gemini_api_key = models.CharField(max_length=255, blank=True, default="")
-    gemini_model = models.CharField(max_length=64, default="gemini-2.5-flash")
+    gemini_model = models.CharField(max_length=128, default="gemini-2.5-flash")
     confirm_destructive = models.BooleanField(default=True)
     auto_scan_secrets = models.BooleanField(default=True)
     secrets_allowlist = models.TextField(blank=True, default="")

@@ -22,8 +22,21 @@ def zit_context(request):
     repo_is_valid = is_git_repo(active_repo)
     repo_status = get_status(active_repo) if repo_is_valid else None
 
-    # Check AI key
-    gemini_key = request.session.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    # Check AI key & active model
+    gemini_key = request.session.get("gemini_api_key")
+    gemini_model = request.session.get("gemini_model")
+    if not gemini_key or not gemini_model:
+        try:
+            from .models import ZitConfig
+            config = ZitConfig.get_solo()
+            if not gemini_key:
+                gemini_key = config.gemini_api_key or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+            if not gemini_model:
+                gemini_model = config.gemini_model
+        except Exception:
+            pass
+
+    gemini_model = gemini_model or "gemini-2.5-flash"
 
     return {
         "app_name": "Blamestorm",
@@ -31,6 +44,7 @@ def zit_context(request):
         "repo_is_valid": repo_is_valid,
         "repo_status": repo_status,
         "gemini_configured": bool(gemini_key),
+        "gemini_model": gemini_model,
         "version": "v1.0.0 (Django Edition)",
         "zit_version": "v1.0.0 (Django Edition)",
     }
