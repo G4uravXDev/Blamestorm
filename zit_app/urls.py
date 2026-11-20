@@ -19,6 +19,7 @@ urlpatterns = [
     path("workflow/", views.workflow_builder_view, name="workflow_builder"),
     path("github/", views.github_view, name="github"),
     path("mentor/", views.ai_mentor_view, name="ai_mentor"),
+    path("staging/mentor/", views.ai_code_studio_view, name="ai_code_mentor"),
     path("agent/", views.agent_view, name="agent"),
     path("settings/", views.settings_view, name="settings"),
 
@@ -26,6 +27,8 @@ urlpatterns = [
     path("api/git-command/", views.api_git_command, name="api_git_command"),
     path("api/ai-commit/", views.api_ai_commit, name="api_ai_commit"),
     path("api/ai-mentor/", views.api_ai_mentor, name="api_ai_mentor"),
+    path("api/ai-code-mentor/query/", views.api_ai_code_mentor_query, name="api_ai_code_mentor_query"),
+    path("api/ai-code-mentor/apply/", views.api_ai_code_mentor_apply, name="api_ai_code_mentor_apply"),
     path("api/ai-resolve/", views.api_ai_resolve, name="api_ai_resolve"),
     path("api/agent-turn/", views.api_agent_turn, name="api_agent_turn"),
     path("api/agent-approve/", views.api_agent_approve, name="api_agent_approve"),

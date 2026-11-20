@@ -53,7 +53,8 @@ index 0000000..e69de29
         self.assertEqual(classify_command_safety(["log", "--oneline"]), "SAFE")
         self.assertEqual(classify_command_safety(["diff"]), "SAFE")
         self.assertEqual(classify_command_safety(["add", "-A"]), "CAUTION")
-        self.assertEqual(classify_command_safety(["commit", "-m", "msg"]), "CAUTION")
+        self.assertEqual(classify_command_safety(["checkout", "-b", "new-feature"]), "CAUTION")
+        self.assertEqual(classify_command_safety(["commit", "-m", "msg"]), "COMMIT_APPROVAL_REQUIRED")
         self.assertEqual(classify_command_safety(["reset", "--hard", "HEAD~1"]), "DESTRUCTIVE")
         self.assertEqual(classify_command_safety(["push", "--force"]), "DESTRUCTIVE")
         self.assertEqual(classify_command_safety(["clean", "-fd"]), "DESTRUCTIVE")
@@ -94,6 +95,7 @@ class ViewTests(TestCase):
             "zit:workflow_builder",
             "zit:github",
             "zit:ai_mentor",
+            "zit:ai_code_mentor",
             "zit:agent",
             "zit:settings",
         ]
@@ -136,3 +138,40 @@ class ViewTests(TestCase):
         data = resp.json()
         self.assertFalse(data["success"])
         self.assertIn("No Gemini API key configured", data["error"])
+
+    def test_commit_requires_user_approval_in_agent(self):
+        from .ai_engine.agent_runner import classify_command_safety, parse_agent_response
+        safety = classify_command_safety(["commit", "-m", "feat: update"])
+        self.assertEqual(safety, "COMMIT_APPROVAL_REQUIRED")
+
+        plan = parse_agent_response('[TOOL_USE] git commit -m "feat: user flow"')
+        self.assertEqual(len(plan.steps), 1)
+        self.assertTrue(plan.steps[0].requires_approval)
+        self.assertEqual(plan.steps[0].safety_level, "COMMIT_APPROVAL_REQUIRED")
+
+    def test_staging_view_empty_right_box_until_file_selected(self):
+        # When visiting /staging/ without selecting a file, file_diffs should be empty
+        resp = self.client.get(reverse("zit:staging"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context["selected_file"], "")
+        self.assertEqual(len(resp.context["file_diffs"]), 0)
+        self.assertContains(resp, "No File Selected")
+
+    def test_ai_code_mentor_studio_view(self):
+        resp = self.client.get(reverse("zit:ai_code_mentor"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("file_path", resp.context)
+        self.assertContains(resp, "AI Mentor Code Studio")
+        self.assertContains(resp, "Suggested Code")
+
+    def test_ai_code_mentor_apply_security(self):
+        import json
+        # Deny traversal outside repository
+        payload = json.dumps({
+            "file_path": "../../../outside.txt",
+            "code": "malicious"
+        })
+        resp = self.client.post(reverse("zit:api_ai_code_mentor_apply"), payload, content_type="application/json")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertFalse(data["success"])

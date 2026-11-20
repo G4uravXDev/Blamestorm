@@ -7,6 +7,31 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initialize collapsible sidebar state
   initSidebar();
 
+  // ── Smooth Button Click Feedback & Ripple Effect ────────────────
+  document.addEventListener("pointerdown", function (e) {
+    const btn = e.target.closest("button, .btn, input[type='button'], input[type='submit'], .sidebar-toggle-btn");
+    if (!btn || btn.disabled) return;
+
+    const rect = btn.getBoundingClientRect();
+    const ripple = document.createElement("span");
+    ripple.className = "btn-ripple";
+
+    const size = Math.max(rect.width, rect.height) * 2;
+    const x = e.clientX - rect.left - size / 2;
+    const y = e.clientY - rect.top - size / 2;
+
+    ripple.style.width = `${size}px`;
+    ripple.style.height = `${size}px`;
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+
+    btn.appendChild(ripple);
+
+    setTimeout(() => {
+      ripple.remove();
+    }, 500);
+  });
+
   // ── Keyboard Shortcuts ──────────────────────────────────────────
   document.addEventListener("keydown", function (e) {
     // Ignore keystrokes when focused on input, textarea, or contentEditable
@@ -56,9 +81,6 @@ document.addEventListener("DOMContentLoaded", function () {
         break;
       case "g":
         window.location.href = "/github/";
-        break;
-      case "a":
-        window.location.href = "/mentor/";
         break;
       case "A":
         window.location.href = "/agent/";

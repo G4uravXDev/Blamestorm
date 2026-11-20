@@ -1,15 +1,12 @@
 <header class="zit-navbar">
   <div class="nav-brand">
-    {% if active_view != 'dashboard' %}
-      <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Toggle Sidebar (Expand / Collapse)" style="margin-right:4px;">
-        <span style="font-size:14px; line-height:1;">☰</span>
-      </button>
-    {% endif %}
     <a href="{% url 'zit:dashboard' %}" class="nav-logo">
       <span style="color:#39c5cf;">&gt;</span>Blamestorm<span style="color:var(--accent-green-bright); font-size:12px;">.py</span>
     </a>
     <div class="nav-repo-info" onclick="openModal('repoModal')" title="Click to switch working repository">
-      <span style="color:var(--accent-blue);">📁</span>
+      <span style="color:var(--accent-blue); display:inline-flex; align-items:center;">
+        <svg class="zit-icon zit-icon-sm"><use href="#icon-folder"></use></svg>
+      </span>
       <span class="font-mono" style="font-size:12px; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
         {{ current_repo_path }}
       </span>
@@ -27,14 +24,14 @@
   <div class="nav-actions">
     {% if active_view != 'dashboard' %}
       <a href="{% url 'zit:dashboard' %}" class="btn btn-sm" title="Return to Dashboard">
-        🏠 Dashboard
+        <svg class="zit-icon zit-icon-sm" style="margin-right:4px;"><use href="#icon-home"></use></svg>Dashboard
       </a>
     {% endif %}
     <button class="btn btn-sm" onclick="openModal('shortcutsModal')" title="Keyboard Shortcuts (?)">
       <kbd>?</kbd> Help
     </button>
-    <a href="{% url 'zit:settings' %}" class="btn btn-sm" title="Settings & Gemini Model">
-      ⚙️
+    <a href="{% url 'zit:settings' %}" class="btn btn-sm" title="Settings & Gemini Model" aria-label="Settings">
+      <svg class="zit-icon zit-icon-sm"><use href="#icon-settings"></use></svg>
     </a>
   </div>
 </header>

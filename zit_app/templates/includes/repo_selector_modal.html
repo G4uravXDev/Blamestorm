@@ -1,8 +1,13 @@
 <div id="repoModal" class="modal-overlay">
   <div class="modal-content">
     <div class="modal-header">
-      <h3 class="card-title">📂 Switch Active Repository</h3>
-      <button class="btn btn-sm" onclick="closeModal('repoModal')">✕</button>
+      <h3 class="card-title" style="display:flex; align-items:center; gap:8px;">
+        <svg class="zit-icon zit-icon-sm" style="color:var(--accent-blue);"><use href="#icon-folder"></use></svg>
+        <span>Switch Active Repository</span>
+      </h3>
+      <button class="btn btn-sm" onclick="closeModal('repoModal')" aria-label="Close">
+        <svg class="zit-icon zit-icon-xs"><use href="#icon-close"></use></svg>
+      </button>
     </div>
     <div class="modal-body">
       <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">

@@ -45,7 +45,7 @@ READ_ONLY_COMMANDS = {
 
 
 def classify_command_safety(args: List[str]) -> str:
-    """Classify git command as SAFE, CAUTION, or DESTRUCTIVE."""
+    """Classify git command as SAFE, CAUTION, DESTRUCTIVE, or COMMIT_APPROVAL_REQUIRED."""
     if not args:
         return "SAFE"
 
@@ -55,6 +55,11 @@ def classify_command_safety(args: List[str]) -> str:
             return "DESTRUCTIVE"
 
     subcmd = args[0].lower() if args else ""
+
+    # Strictly protect commits: AI must NEVER commit on its own; only the user can commit.
+    if subcmd == "commit" or "commit" in args:
+        return "COMMIT_APPROVAL_REQUIRED"
+
     if subcmd in READ_ONLY_COMMANDS and not any(flag in cmd_str for flag in ("-d", "-D", "--delete")):
         return "SAFE"
 
@@ -84,12 +89,17 @@ def parse_agent_response(response_text: str) -> AgentPlan:
                 args = cmd_part.split()
 
             safety = classify_command_safety(args)
-            requires_approval = (safety == "DESTRUCTIVE")
+            # Both destructive operations and any commit operation strictly require user approval
+            requires_approval = (safety in ("DESTRUCTIVE", "COMMIT_APPROVAL_REQUIRED"))
+
+            desc = f"Execute git {cmd_part}"
+            if safety == "COMMIT_APPROVAL_REQUIRED":
+                desc = "Commit requires manual user authorization. Only you can commit."
 
             steps.append(AgentStep(
                 command=f"git {cmd_part}",
                 args=args,
-                description=f"Execute git {cmd_part}",
+                description=desc,
                 safety_level=safety,
                 requires_approval=requires_approval
             ))
@@ -160,6 +170,13 @@ def run_agent_turn(
     pending_approval = None
 
     for step in plan.steps:
+        subcmd = step.args[0].lower() if step.args else ""
+        # Commits MUST NEVER be executed automatically. Only the user can commit.
+        if subcmd == "commit" or "commit" in step.args:
+            step.requires_approval = True
+            step.safety_level = "COMMIT_APPROVAL_REQUIRED"
+            step.description = "Commit requires manual user authorization. Only you can commit."
+
         if step.requires_approval or (not auto_execute_safe and step.safety_level != "SAFE"):
             pending_approval = {
                 "command": step.command,

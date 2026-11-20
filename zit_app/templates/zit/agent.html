@@ -6,14 +6,18 @@
 <div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
   <div>
     <h1 style="font-size:22px; font-weight:700; color:var(--accent-cyan); display:flex; align-items:center; gap:8px;">
-      ⚡ Autonomous Git Agent Mode
+      <svg class="zit-icon zit-icon-md"><use href="#icon-agent"></use></svg>
+      <span>Autonomous Git Agent Mode</span>
     </h1>
     <p style="font-size:13px; color:var(--text-muted);">
-      Describe what you want to accomplish in natural language. Gemini inspects the repo, plans the commands, and safely executes them for you.
+      Describe what you want to accomplish in natural language. Gemini inspects the repo, plans the commands, and safely
+      executes them for you.
     </p>
   </div>
   <div style="display:flex; gap:8px;">
-    <button class="btn btn-sm" onclick="resetAgentConversation()">🧹 Clear Chat</button>
+    <button class="btn btn-sm" onclick="resetAgentConversation()">
+      <svg class="zit-icon zit-icon-xs" style="margin-right:4px;"><use href="#icon-trash"></use></svg>Clear Chat
+    </button>
   </div>
 </div>
 
@@ -26,18 +30,28 @@
 </div>
 {% endif %}
 
-<!-- Pending Approval Banner (Shown dynamically when destructive operation is planned) -->
-<div id="approvalBanner" class="alert alert-danger" style="display:none; margin-bottom:16px; align-items:center; justify-content:space-between;">
+<!-- Pending Approval Banner (Shown dynamically when commit or destructive operation is planned) -->
+<div id="approvalBanner" class="alert alert-danger"
+  style="display:none; margin-bottom:16px; align-items:center; justify-content:space-between;">
   <div>
-    <strong>⚠️ Destructive Operation Approval Required:</strong>
+    <strong id="approvalTitle">
+      <svg class="zit-icon zit-icon-sm" style="margin-right:4px; color:var(--accent-yellow);"><use href="#icon-alert"></use></svg>User Authorization Required:
+    </strong>
     <div style="margin-top:4px;">
       The AI agent planned: <code id="approvalCmd" style="font-size:13px; font-weight:700; color:#fff;">git ...</code>
     </div>
     <div id="approvalDesc" style="font-size:12px; color:var(--text-muted); margin-top:2px;"></div>
   </div>
   <div style="display:flex; gap:8px;">
-    <button class="btn btn-primary btn-sm" onclick="approveCommand()">✓ Approve &amp; Execute</button>
-    <button class="btn btn-sm" onclick="rejectCommand()">✕ Reject / Stop</button>
+    <button class="btn btn-primary btn-sm" id="btnApproveAction" onclick="approveCommand()">
+      <svg class="zit-icon zit-icon-xs" style="margin-right:4px;"><use href="#icon-check"></use></svg>Authorize &amp; Execute
+    </button>
+    <a href="{% url 'zit:commit' %}" class="btn btn-sm" id="btnGoToCommit" style="display:none;">
+      <svg class="zit-icon zit-icon-xs" style="margin-right:4px;"><use href="#icon-commit"></use></svg>Open Commit Editor
+    </a>
+    <button class="btn btn-sm" onclick="rejectCommand()">
+      <svg class="zit-icon zit-icon-xs" style="margin-right:4px;"><use href="#icon-close"></use></svg>Reject / Stop
+    </button>
   </div>
 </div>
 
@@ -46,202 +60,223 @@
   <div id="chatMessages" class="chat-messages">
     <!-- Welcome message -->
     <div class="chat-bubble chat-agent">
-      <div style="font-weight:700; color:var(--accent-cyan); margin-bottom:4px;">🤖 Blamestorm Git Agent</div>
+      <div style="font-weight:700; color:var(--accent-cyan); margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+        <svg class="zit-icon zit-icon-sm"><use href="#icon-agent"></use></svg>
+        <span>Blamestorm Git Agent</span>
+      </div>
       <div>
-        Hello! I am your autonomous Git operations agent. Tell me what you'd like to do in plain English — for example:
+        Hello! I am your autonomous Git operations agent.:
         <ul style="margin-top:6px; margin-left:18px;">
-          <li><em>"Undo my last commit, keep the changes in my working directory, and switch to a new branch called feature/refactor."</em></li>
-          <li><em>"Stage all modified files except .env, create a commit with message 'feat: api setup', and push to origin."</em></li>
-          <li><em>"Check if my branch is behind main and show me the commits I'm missing."</em></li>
+          <li><em>"Undo my last commit, keep the changes in my working directory, and switch to a new branch called
+              feature/refactor."</em></li>
+          <li><em>"Stage all modified files except .env, create a commit with message 'feat: api setup', and push to
+              origin."</em></li>
+          <li><em>"Check if my branch is behind main and show me the commits I 'm missing."</em></li>
         </ul>
       </div>
     </div>
 
     {% for msg in messages %}
-      {% if msg.role == 'user' %}
-        <div class="chat-bubble chat-user">
-          <div style="font-size:11px; color:var(--accent-cyan); margin-bottom:2px; font-weight:600;">You</div>
-          <div>{{ msg.content }}</div>
-        </div>
-      {% elif msg.role == 'assistant' %}
-        <div class="chat-bubble chat-agent">
-          <div style="font-size:11px; color:var(--accent-green-bright); margin-bottom:2px; font-weight:600;">🤖 Blamestorm Agent</div>
-          <div style="white-space:pre-wrap;">{{ msg.content }}</div>
-        </div>
-      {% elif msg.role == 'tool' %}
-        <div class="chat-bubble chat-tool">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <span style="color:var(--accent-cyan); font-weight:600;">$ {{ msg.command }}</span>
-            <span class="badge" style="font-size:10px;">{{ msg.safety_level }}</span>
-          </div>
-          {% if msg.command_output %}
-            <pre style="color:var(--text-muted); margin:0; overflow-x:auto;">{{ msg.command_output }}</pre>
-          {% else %}
-            <span style="color:var(--accent-green-bright);">(Command completed with exit code 0)</span>
-          {% endif %}
-        </div>
+    {% if msg.role == 'user' %}
+    <div class="chat-bubble chat-user">
+      <div style="font-size:11px; color:var(--accent-cyan); margin-bottom:2px; font-weight:600;">You</div>
+      <div>{{ msg.content }}</div>
+    </div>
+    {% elif msg.role == 'assistant' %}
+    <div class="chat-bubble chat-agent">
+      <div style="font-size:11px; color:var(--accent-green-bright); margin-bottom:2px; font-weight:600; display:flex; align-items:center; gap:5px;">
+        <svg class="zit-icon zit-icon-xs"><use href="#icon-agent"></use></svg>
+        <span>Blamestorm Agent</span>
+      </div>
+      <div style="white-space:pre-wrap;">{{ msg.content }}</div>
+    </div>
+    {% elif msg.role == 'tool' %}
+    <div class="chat-bubble chat-tool">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <span style="color:var(--accent-cyan); font-weight:600;">$ {{ msg.command }}</span>
+        <span class="badge" style="font-size:10px;">{{ msg.safety_level }}</span>
+      </div>
+      {% if msg.command_output %}
+      <pre style="color:var(--text-muted); margin:0; overflow-x:auto;">{{ msg.command_output }}</pre>
+      {% else %}
+      <span style="color:var(--accent-green-bright);">(Command completed with exit code 0)</span>
       {% endif %}
+    </div>
+    {% endif %}
     {% endfor %}
   </div>
 
   <!-- Chat Input Bar -->
   <div class="chat-input-bar">
-    <input type="text" id="agentInput" class="form-control" placeholder="Describe git task... (e.g. 'pull latest main and rebase my feature branch')" onkeydown="if(event.key==='Enter') sendAgentMessage();">
+    <input type="text" id="agentInput" class="form-control"
+      placeholder="Describe git task... (e.g. 'pull latest main and rebase my feature branch')"
+      onkeydown="if(event.key==='Enter') sendAgentMessage();">
     <button class="btn btn-primary" id="btnSendAgent" onclick="sendAgentMessage()">
-      Send ➔
+      Send <svg class="zit-icon zit-icon-xs" style="margin-left:4px;"><use href="#icon-zap"></use></svg>
     </button>
   </div>
 </div>
 
 <script>
-let pendingCommandData = null;
+  let pendingCommandData = null;
 
-function scrollChatToBottom() {
-  const el = document.getElementById('chatMessages');
-  el.scrollTop = el.scrollHeight;
-}
+  function scrollChatToBottom() {
+    const el = document.getElementById('chatMessages');
+    el.scrollTop = el.scrollHeight;
+  }
 
-async function sendAgentMessage() {
-  const inputEl = document.getElementById('agentInput');
-  const text = inputEl.value.trim();
-  if (!text) return;
+  async function sendAgentMessage() {
+    const inputEl = document.getElementById('agentInput');
+    const text = inputEl.value.trim();
+    if (!text) return;
 
-  inputEl.value = '';
-  inputEl.disabled = true;
-  document.getElementById('btnSendAgent').disabled = true;
+    inputEl.value = '';
+    inputEl.disabled = true;
+    document.getElementById('btnSendAgent').disabled = true;
 
-  // Append user bubble immediately
-  appendBubble('user', text);
-  scrollChatToBottom();
-
-  // Thinking indicator
-  const thinkingId = appendBubble('agent', 'Thinking and planning git commands with Gemini...');
-  scrollChatToBottom();
-
-  try {
-    const res = await fetch('/api/agent-turn/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ intent: text })
-    });
-    const data = await res.json();
-
-    const thinkingBubble = document.getElementById(thinkingId);
-    if (thinkingBubble) thinkingBubble.remove();
-
-    if (data.success && data.result) {
-      const resData = data.result;
-
-      // Agent explanation
-      if (resData.explanation) {
-        appendBubble('agent', resData.explanation);
-      }
-
-      // Executed steps
-      if (resData.executed_steps) {
-        resData.executed_steps.forEach(s => {
-          appendToolBubble(s.command, s.output, s.safety_level, s.status);
-        });
-      }
-
-      // Pending destructive approval
-      if (resData.pending_approval) {
-        pendingCommandData = resData.pending_approval;
-        document.getElementById('approvalCmd').textContent = pendingCommandData.command;
-        document.getElementById('approvalDesc').textContent = pendingCommandData.description || 'Destructive git operation';
-        document.getElementById('approvalBanner').style.display = 'flex';
-      }
-
-      if (resData.is_done) {
-        showToast('Agent finished task successfully!', 'success');
-      }
-    } else {
-      appendBubble('agent', 'Error: ' + (data.error || 'Failed to complete agent turn'));
-    }
-  } catch (err) {
-    appendBubble('agent', 'Network error: ' + err);
-  } finally {
-    inputEl.disabled = false;
-    document.getElementById('btnSendAgent').disabled = false;
-    inputEl.focus();
+    // Append user bubble immediately
+    appendBubble('user', text);
     scrollChatToBottom();
+
+    // Thinking indicator
+    const thinkingId = appendBubble('agent', 'Thinking and planning git commands with Gemini...');
+    scrollChatToBottom();
+
+    try {
+      const res = await fetch('/api/agent-turn/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intent: text })
+      });
+      const data = await res.json();
+
+      const thinkingBubble = document.getElementById(thinkingId);
+      if (thinkingBubble) thinkingBubble.remove();
+
+      if (data.success && data.result) {
+        const resData = data.result;
+
+        // Agent explanation
+        if (resData.explanation) {
+          appendBubble('agent', resData.explanation);
+        }
+
+        // Executed steps
+        if (resData.executed_steps) {
+          resData.executed_steps.forEach(s => {
+            appendToolBubble(s.command, s.output, s.safety_level, s.status);
+          });
+        }
+
+        // Pending approval (commits or destructive commands)
+        if (resData.pending_approval) {
+          pendingCommandData = resData.pending_approval;
+          document.getElementById('approvalCmd').textContent = pendingCommandData.command;
+          document.getElementById('approvalDesc').textContent = pendingCommandData.description || 'User authorization required';
+
+          if (pendingCommandData.safety_level === 'COMMIT_APPROVAL_REQUIRED') {
+            document.getElementById('approvalTitle').innerHTML = '<svg class="zit-icon zit-icon-sm" style="margin-right:4px; color:var(--accent-yellow);"><use href="#icon-lock"></use></svg> Commit Authorization Required (Only user can commit):';
+            document.getElementById('btnApproveAction').innerHTML = '<svg class="zit-icon zit-icon-xs" style="margin-right:4px;"><use href="#icon-check"></use></svg> Authorize Commit';
+            document.getElementById('btnGoToCommit').style.display = 'inline-flex';
+          } else {
+            document.getElementById('approvalTitle').innerHTML = '<svg class="zit-icon zit-icon-sm" style="margin-right:4px; color:var(--accent-yellow);"><use href="#icon-alert"></use></svg> Destructive Operation Approval Required:';
+            document.getElementById('btnApproveAction').innerHTML = '<svg class="zit-icon zit-icon-xs" style="margin-right:4px;"><use href="#icon-check"></use></svg> Approve & Execute';
+            document.getElementById('btnGoToCommit').style.display = 'none';
+          }
+
+          document.getElementById('approvalBanner').style.display = 'flex';
+        }
+
+        if (resData.is_done) {
+          showToast('Agent finished task successfully!', 'success');
+        }
+      } else {
+        appendBubble('agent', 'Error: ' + (data.error || 'Failed to complete agent turn'));
+      }
+    } catch (err) {
+      appendBubble('agent', 'Network error: ' + err);
+    } finally {
+      inputEl.disabled = false;
+      document.getElementById('btnSendAgent').disabled = false;
+      inputEl.focus();
+      scrollChatToBottom();
+    }
   }
-}
 
-async function approveCommand() {
-  if (!pendingCommandData) return;
-  document.getElementById('approvalBanner').style.display = 'none';
+  async function approveCommand() {
+    if (!pendingCommandData) return;
+    document.getElementById('approvalBanner').style.display = 'none';
 
-  try {
-    const res = await fetch('/api/agent-approve/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        command: pendingCommandData.command,
-        args: pendingCommandData.args
-      })
-    });
-    const data = await res.json();
-    appendToolBubble(pendingCommandData.command, data.stdout || data.stderr, 'DESTRUCTIVE', data.success ? 'success' : 'failed');
+    try {
+      const res = await fetch('/api/agent-approve/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          command: pendingCommandData.command,
+          args: pendingCommandData.args
+        })
+      });
+      const data = await res.json();
+      appendToolBubble(pendingCommandData.command, data.stdout || data.stderr, 'DESTRUCTIVE', data.success ? 'success' : 'failed');
+      pendingCommandData = null;
+
+      // Continue agent loop after approval
+      sendAgentMessageFollowup('Command approved and executed. Please review result and continue if needed.');
+    } catch (err) {
+      showToast('Failed to execute command: ' + err, 'danger');
+    }
+  }
+
+  function rejectCommand() {
+    document.getElementById('approvalBanner').style.display = 'none';
     pendingCommandData = null;
-
-    // Continue agent loop after approval
-    sendAgentMessageFollowup('Command approved and executed. Please review result and continue if needed.');
-  } catch (err) {
-    showToast('Failed to execute command: ' + err, 'danger');
+    appendBubble('agent', 'Operation cancelled by user.');
   }
-}
 
-function rejectCommand() {
-  document.getElementById('approvalBanner').style.display = 'none';
-  pendingCommandData = null;
-  appendBubble('agent', 'Operation cancelled by user.');
-}
+  async function sendAgentMessageFollowup(msg) {
+    appendBubble('user', msg);
+    // Continue turn
+  }
 
-async function sendAgentMessageFollowup(msg) {
-  appendBubble('user', msg);
-  // Continue turn
-}
+  function appendBubble(role, content) {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    const id = 'msg-' + Date.now();
+    div.id = id;
+    div.className = `chat-bubble chat-${role}`;
 
-function appendBubble(role, content) {
-  const container = document.getElementById('chatMessages');
-  const div = document.createElement('div');
-  const id = 'msg-' + Date.now();
-  div.id = id;
-  div.className = `chat-bubble chat-${role}`;
+    const header = role === 'user' ? 'You' : '<svg class="zit-icon zit-icon-xs" style="margin-right:4px;"><use href="#icon-agent"></use></svg> Blamestorm Agent';
+    const color = role === 'user' ? 'var(--accent-cyan)' : 'var(--accent-green-bright)';
 
-  const header = role === 'user' ? 'You' : '🤖 Blamestorm Agent';
-  const color = role === 'user' ? 'var(--accent-cyan)' : 'var(--accent-green-bright)';
-
-  div.innerHTML = `
+    div.innerHTML = `
     <div style="font-size:11px; color:${color}; margin-bottom:2px; font-weight:600;">${header}</div>
     <div style="white-space:pre-wrap;">${content}</div>
   `;
-  container.appendChild(div);
-  return id;
-}
+    container.appendChild(div);
+    return id;
+  }
 
-function appendToolBubble(command, output, safety, status) {
-  const container = document.getElementById('chatMessages');
-  const div = document.createElement('div');
-  div.className = 'chat-bubble chat-tool';
-  div.innerHTML = `
+  function appendToolBubble(command, output, safety, status) {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'chat-bubble chat-tool';
+    div.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
       <span style="color:var(--accent-cyan); font-weight:600;">$ ${command}</span>
       <span class="badge" style="font-size:10px;">${safety}</span>
     </div>
     <pre style="color:var(--text-muted); margin:0; overflow-x:auto;">${output || '(exit code 0)'}</pre>
   `;
-  container.appendChild(div);
-}
-
-async function resetAgentConversation() {
-  if (confirm('Clear chat history?')) {
-    await fetch('/api/agent-reset/', { method: 'POST' });
-    window.location.reload();
+    container.appendChild(div);
   }
-}
 
-document.addEventListener('DOMContentLoaded', scrollChatToBottom);
+  async function resetAgentConversation() {
+    if (confirm('Clear chat history?')) {
+      await fetch('/api/agent-reset/', { method: 'POST' });
+      window.location.reload();
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', scrollChatToBottom);
 </script>
 {% endblock %}

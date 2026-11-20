@@ -11,7 +11,7 @@ from .git_engine.runner import run_git, get_repo_root, is_git_repo, init_repo
 from .git_engine.status import get_status
 from .git_engine.diff import (
     get_staged_diff, get_unstaged_diff, get_raw_staged_diff, get_raw_unstaged_diff,
-    get_commit_diff, get_staged_stat, stage_file, unstage_file, stage_all,
+    get_commit_diff, get_staged_stat, get_unstaged_stat, stage_file, unstage_file, stage_all,
     unstage_all, discard_file_changes, stage_hunk, unstage_hunk
 )
 from .git_engine.branch import (
@@ -87,18 +87,16 @@ def staging_view(request):
         return redirect("zit:dashboard")
 
     status = get_status(repo_path)
-    selected_file = request.GET.get("file", "")
-    diff_type = request.GET.get("type", "unstaged")  # staged or unstaged
+    selected_file = request.GET.get("file", "").strip()
+    diff_type = request.GET.get("type", "unstaged").strip()  # staged or unstaged
 
     file_diffs = []
-    if diff_type == "staged":
-        file_diffs = get_staged_diff(repo_path, path=selected_file or None)
-    else:
-        file_diffs = get_unstaged_diff(repo_path, path=selected_file or None)
-
-    # If no file selected, pick first changed file if available
-    if not selected_file and file_diffs:
-        selected_file = file_diffs[0].path
+    # Only populate diffs if the user has explicitly selected a file
+    if selected_file:
+        if diff_type == "staged":
+            file_diffs = get_staged_diff(repo_path, path=selected_file)
+        else:
+            file_diffs = get_unstaged_diff(repo_path, path=selected_file)
 
     # Secret scanning on staged files
     raw_staged = get_raw_staged_diff(repo_path)
@@ -399,6 +397,70 @@ def ai_mentor_view(request):
     return render(request, "zit/ai_mentor.html", context)
 
 
+def ai_code_studio_view(request):
+    """3-Pane AI Mentor Code Studio: Current Code | AI Mentor Terminal | Suggested Code."""
+    repo_path = _get_active_repo(request)
+    if not is_git_repo(repo_path):
+        return redirect("zit:dashboard")
+
+    status = get_status(repo_path)
+    file_path = request.GET.get("file", "").strip()
+    diff_type = request.GET.get("type", "unstaged").strip()
+
+    # Collect changed files for switcher dropdown
+    changed_files = []
+    if status:
+        for f in status.staged:
+            if f.path not in changed_files:
+                changed_files.append(f.path)
+        for f in status.unstaged:
+            if f.path not in changed_files:
+                changed_files.append(f.path)
+        for f in status.untracked:
+            if f.path not in changed_files:
+                changed_files.append(f.path)
+
+    # If no file specified, default to first changed file
+    if not file_path and changed_files:
+        file_path = changed_files[0]
+
+    file_content = ""
+    file_lines = []
+    file_exists = False
+    file_error = ""
+
+    if file_path:
+        full_path = os.path.abspath(os.path.join(repo_path, file_path))
+        if full_path.startswith(os.path.abspath(repo_path)):
+            if os.path.isfile(full_path):
+                file_exists = True
+                try:
+                    with open(full_path, "r", encoding="utf-8", errors="replace") as f:
+                        file_content = f.read()
+                    file_lines = file_content.splitlines()
+                except Exception as e:
+                    file_error = str(e)
+            else:
+                file_error = f"File '{file_path}' does not exist on disk."
+        else:
+            file_error = "Access denied: file path is outside active repository."
+
+    context = {
+        "active_view": "code_mentor",
+        "status": status,
+        "current_repo_path": repo_path,
+        "file_path": file_path,
+        "diff_type": diff_type,
+        "changed_files": changed_files,
+        "file_content": file_content,
+        "file_lines": file_lines,
+        "file_lines_count": len(file_lines),
+        "file_exists": file_exists,
+        "file_error": file_error,
+    }
+    return render(request, "zit/code_mentor.html", context)
+
+
 def agent_view(request):
     """Autonomous AI Agent Mode view."""
     repo_path = _get_active_repo(request)
@@ -619,13 +681,18 @@ def api_git_command(request):
 
 @csrf_exempt
 def api_ai_commit(request):
-    """Generate conventional commit suggestions from staged diff using Gemini."""
+    """Generate conventional commit suggestions from updated files diff using Gemini."""
     if request.method != "POST":
         return HttpResponseBadRequest("POST required")
 
     repo_path = _get_active_repo(request)
     staged_diff = get_raw_staged_diff(repo_path)
     stat = get_staged_stat(repo_path)
+
+    # If staged diff is empty, fall back to analyzing unstaged modified files
+    if not staged_diff or not staged_diff.strip():
+        staged_diff = get_raw_unstaged_diff(repo_path)
+        stat = get_unstaged_stat(repo_path)
 
     ai_client = get_ai_client(request)
     try:
@@ -668,6 +735,155 @@ def api_ai_mentor(request):
         )
         return JsonResponse({"success": True, "answer": answer})
     except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)})
+
+
+@csrf_exempt
+def api_ai_code_mentor_query(request):
+    """Run an interactive code mentor turn on a specific file."""
+    if request.method != "POST":
+        return HttpResponseBadRequest("POST required")
+
+    repo_path = _get_active_repo(request)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        data = request.POST
+
+    file_path = data.get("file_path", "").strip()
+    action = data.get("action", "custom").strip()
+    user_instruction = data.get("prompt", "").strip()
+    current_code = data.get("current_code", "")
+
+    trimmed = user_instruction.strip()
+
+    # 1. Clear command
+    if trimmed.lower() in ("cls", "clear"):
+        return JsonResponse({"success": True, "is_cmd": True, "clear": True})
+
+    # 2. Help command
+    if trimmed.lower() in ("help", "/help", "?"):
+        help_text = (
+            "Blamestorm CMD Terminal Commands:\n"
+            "  git <command>      Run any git command (e.g. git status, git diff, git log -n 5)\n"
+            "  dir / ls           List files in current repository directory\n"
+            "  cls / clear        Clear terminal screen\n"
+            "  explain            Analyze and explain the active file\n"
+            "  review / bugs      Scan active file for bugs, edge cases, and vulnerabilities\n"
+            "  refactor           Refactor and generate updated code in Right Box\n"
+            "  docstrings         Add docstrings & type hints to active file\n"
+            "  <any prompt>       Ask AI Mentor anything about this file or project"
+        )
+        return JsonResponse({"success": True, "is_cmd": True, "output": help_text})
+
+    # 3. Direct git command execution in CMD terminal
+    if trimmed.startswith("git ") or trimmed == "git":
+        args = trimmed.split()[1:]
+        res = run_git(args, cwd=repo_path)
+        output = res.stdout if res.success else (res.stderr or res.stdout or "Command failed with no output.")
+        return JsonResponse({"success": True, "is_cmd": True, "output": output})
+
+    # 4. Directory listing
+    if trimmed.lower() in ("dir", "ls"):
+        try:
+            files = sorted(os.listdir(repo_path))
+            output = "\n".join(files)
+        except Exception as e:
+            output = str(e)
+        return JsonResponse({"success": True, "is_cmd": True, "output": output})
+
+    # 5. Quick action shortcuts typed directly into CMD
+    if trimmed.lower() == "explain":
+        action = "explain"
+        user_instruction = ""
+    elif trimmed.lower() in ("review", "bugs", "bug"):
+        action = "review"
+        user_instruction = ""
+    elif trimmed.lower() in ("refactor", "optimize"):
+        action = "refactor"
+        user_instruction = ""
+    elif trimmed.lower() in ("docstrings", "types", "docs"):
+        action = "docstrings"
+        user_instruction = ""
+
+    # If current_code wasn't provided, read it from disk
+    if not current_code and file_path:
+        full_path = os.path.abspath(os.path.join(repo_path, file_path))
+        if full_path.startswith(os.path.abspath(repo_path)) and os.path.isfile(full_path):
+            try:
+                with open(full_path, "r", encoding="utf-8", errors="replace") as f:
+                    current_code = f.read()
+            except Exception:
+                pass
+
+    if not user_instruction:
+        if action == "explain":
+            user_instruction = "Explain this file in detail. Describe its purpose, architecture, primary functions/classes, and key behavior."
+        elif action == "review":
+            user_instruction = "Review this file for potential bugs, logical issues, security vulnerabilities, and code quality improvements."
+        elif action == "refactor":
+            user_instruction = "Refactor and optimize this file for maximum readability, clean code architecture, performance, and best practices. Provide the complete updated code in ```UPDATED_CODE."
+        elif action == "docstrings":
+            user_instruction = "Add comprehensive type annotations and professional docstrings/comments to this file. Provide the complete updated code in ```UPDATED_CODE."
+        else:
+            user_instruction = "Explain what this file does and suggest any improvements."
+
+    ai_client = get_ai_client(request)
+    try:
+        result = ai_client.mentor_code_turn(
+            file_path=file_path,
+            current_code=current_code,
+            user_instruction=user_instruction,
+            action=action
+        )
+        return JsonResponse({
+            "success": True,
+            "explanation": result["explanation"],
+            "suggested_code": result["suggested_code"],
+            "has_suggested_code": result["has_suggested_code"]
+        })
+    except Exception as e:
+        logger.exception("AI Code Mentor query failed")
+        return JsonResponse({"success": False, "error": str(e)})
+
+
+@csrf_exempt
+def api_ai_code_mentor_apply(request):
+    """Apply suggested code directly to the file on disk."""
+    if request.method != "POST":
+        return HttpResponseBadRequest("POST required")
+
+    repo_path = _get_active_repo(request)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        data = request.POST
+
+    file_path = data.get("file_path", "").strip()
+    code = data.get("code", "")
+
+    if not file_path:
+        return JsonResponse({"success": False, "error": "No file path specified."})
+
+    full_path = os.path.abspath(os.path.join(repo_path, file_path))
+    if not full_path.startswith(os.path.abspath(repo_path)):
+        return JsonResponse({"success": False, "error": "Security error: path outside active repo."})
+
+    try:
+        # Ensure parent directory exists
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        with open(full_path, "w", encoding="utf-8") as f:
+            f.write(code)
+
+        lines_count = len(code.splitlines())
+        return JsonResponse({
+            "success": True,
+            "message": f"Successfully updated '{file_path}' ({lines_count} lines written).",
+            "lines_count": lines_count,
+            "new_code": code
+        })
+    except Exception as e:
+        logger.exception("Failed to write updated code to file")
         return JsonResponse({"success": False, "error": str(e)})
 
 
@@ -785,13 +1001,14 @@ def api_agent_approve(request):
     res = run_git(args, cwd=repo_path)
     output = res.stdout if res.success else res.stderr
 
+    safety_lvl = data.get("safety_level", "AUTHORIZED")
     AgentMessage.objects.create(
         session_id=session_id,
         role="tool",
-        content=f"Approved & executed: {cmd_str}",
+        content=f"User authorized & executed: {cmd_str}",
         command=cmd_str,
         command_output=output,
-        safety_level="DESTRUCTIVE"
+        safety_level=safety_lvl
     )
 
     return JsonResponse({

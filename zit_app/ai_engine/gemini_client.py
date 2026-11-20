@@ -138,8 +138,18 @@ class GeminiClient:
             ]
 
         # Truncate diff if extremely large
-        diff_snippet = staged_diff[:12000]
-        prompt = f"Staged Diff Statistics:\n{stat_summary}\n\nStaged Changes:\n{diff_snippet}\n\nGenerate commit messages following conventional format."
+        diff_snippet = staged_diff[:14000]
+        prompt_parts = []
+        if stat_summary and stat_summary.strip():
+            prompt_parts.append(f"### UPDATED FILES INVENTORY & STATS:\n{stat_summary.strip()}")
+        if diff_snippet and diff_snippet.strip():
+            prompt_parts.append(f"### DETAILED CHANGES ACROSS ALL UPDATED FILES:\n{diff_snippet.strip()}")
+
+        prompt_parts.append(
+            "Go through all the updated files listed above. Understand the collective purpose and scope of the modifications, "
+            "and output exactly 3 conventional commit suggestions (each on a new line prefixed with [SUGGESTION] )."
+        )
+        prompt = "\n\n".join(prompt_parts)
 
         sys_prompt = get_system_prompt("commit")
         try:
@@ -195,6 +205,59 @@ class GeminiClient:
         sys_prompt = get_system_prompt("merge_resolve")
         prompt = f"File: {file_path}\n\nConflict Content with Markers:\n{conflict_text}\n\nAnalyze and provide resolution."
         return self.generate(prompt=prompt, system_instruction=sys_prompt, temperature=0.2)
+
+    def mentor_code_turn(self, file_path: str, current_code: str, user_instruction: str, action: str = "custom") -> dict:
+        """
+        Analyze, explain, or update a specific file.
+        Returns dict with: explanation, suggested_code, has_suggested_code.
+        """
+        sys_prompt = get_system_prompt("code_mentor")
+
+        prompt = (
+            f"Active File: {file_path}\n"
+            f"Requested Action: {action}\n\n"
+            f"Current File Content:\n"
+            f"```\n{current_code[:25000]}\n```\n\n"
+            f"User Instruction:\n{user_instruction}"
+        )
+
+        raw_resp = self.generate(prompt=prompt, system_instruction=sys_prompt, temperature=0.2)
+
+        suggested_code = ""
+        has_suggested_code = False
+
+        if "```UPDATED_CODE" in raw_resp:
+            parts = raw_resp.split("```UPDATED_CODE", 1)
+            explanation = parts[0].strip()
+            rest = parts[1]
+            if "```" in rest:
+                suggested_code = rest.split("```", 1)[0].strip()
+                has_suggested_code = True
+                after_code = rest.split("```", 1)[1].strip()
+                if after_code:
+                    explanation += "\n\n" + after_code
+            else:
+                suggested_code = rest.strip()
+                has_suggested_code = True
+        elif action in ("refactor", "update", "fix") and "```" in raw_resp:
+            import re
+            matches = list(re.finditer(r"```(?:\w+)?\n([\s\S]*?)```", raw_resp))
+            if matches:
+                longest = max(matches, key=lambda m: len(m.group(1)))
+                suggested_code = longest.group(1).strip()
+                has_suggested_code = True
+                explanation = raw_resp.replace(longest.group(0), "[Suggested updated code loaded into the Right Box]").strip()
+            else:
+                explanation = raw_resp
+        else:
+            explanation = raw_resp
+
+        return {
+            "explanation": explanation.strip(),
+            "suggested_code": suggested_code,
+            "has_suggested_code": has_suggested_code,
+            "raw_response": raw_resp
+        }
 
 
 def get_ai_client(request=None) -> GeminiClient:

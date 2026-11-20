@@ -13,6 +13,9 @@
   <div style="display:flex; gap:8px;">
     <button class="btn btn-sm" onclick="runGitAction('unstage_all')" title="Unstage all files">Unstage All</button>
     <button class="btn btn-primary btn-sm" onclick="runGitAction('stage_all')" title="Stage all changes">Stage All (+A)</button>
+    <a href="{% url 'zit:ai_code_mentor' %}{% if selected_file %}?file={{ selected_file }}&type={{ diff_type }}{% endif %}" class="btn btn-sm" style="background:rgba(137,87,229,0.18); border:1px solid var(--accent-purple); color:var(--accent-purple-bright); font-weight:600; display:inline-flex; align-items:center;" title="Open AI Code Mentor Studio to explain and update file">
+      <svg class="zit-icon zit-icon-xs" style="margin-right:5px;"><use href="#icon-mentor"></use></svg>AI Mentor
+    </a>
     <a href="{% url 'zit:commit' %}" class="btn btn-blue btn-sm">Proceed to Commit <kbd>c</kbd></a>
   </div>
 </div>
@@ -20,7 +23,7 @@
 {% if secrets_found %}
 <div class="alert alert-danger" style="margin-bottom:16px;">
   <div>
-    <strong>🔒 Secret Warning Engine:</strong> Zit detected <strong>{{ secrets_found|length }}</strong> secret(s) in your staged changes!
+    <strong><svg class="zit-icon zit-icon-sm" style="margin-right:4px;"><use href="#icon-lock"></use></svg>Secret Warning Engine:</strong> Zit detected <strong>{{ secrets_found|length }}</strong> secret(s) in your staged changes!
     <ul style="margin-top:6px; margin-left:20px; font-size:12px;">
       {% for s in secrets_found %}
         <li><code>{{ s.file }}:{{ s.line }}</code> — <strong>{{ s.rule_name }}</strong> (preview: <code>{{ s.preview }}</code>)</li>
@@ -30,17 +33,86 @@
 </div>
 {% endif %}
 
+<style>
+  .staging-files-panel {
+    height: calc(100vh - 190px);
+    min-height: 520px;
+    max-height: calc(100vh - 190px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-sizing: border-box;
+  }
+
+  .staging-diff-panel {
+    height: calc(100vh - 190px);
+    min-height: 520px;
+    max-height: calc(100vh - 190px);
+    overflow-y: auto;
+    overflow-x: auto;
+    background: #090d16;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .staging-files-panel::-webkit-scrollbar,
+  .staging-diff-panel::-webkit-scrollbar,
+  .staging-file-list-body::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .staging-files-panel::-webkit-scrollbar-track,
+  .staging-diff-panel::-webkit-scrollbar-track,
+  .staging-file-list-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .staging-files-panel::-webkit-scrollbar-thumb,
+  .staging-diff-panel::-webkit-scrollbar-thumb,
+  .staging-file-list-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 9999px;
+    transition: background-color 0.2s ease;
+  }
+  .staging-files-panel::-webkit-scrollbar-thumb:hover,
+  .staging-diff-panel::-webkit-scrollbar-thumb:hover,
+  .staging-file-list-body::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-blue-bright);
+  }
+
+  .staging-diff-panel .diff-file-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+  }
+
+  .staging-file-list-body {
+    max-height: 250px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+</style>
+
 <div class="grid-sidebar">
-  <!-- Left Side: File Lists -->
-  <div>
+  <!-- Left Side: File Lists (Fixed size box with internal scroll) -->
+  <div class="staging-files-panel">
     <!-- Staged Files -->
-    <div class="card" style="margin-bottom:12px;">
+    <div class="card" style="margin-bottom:0;">
       <div class="card-header" style="background:rgba(46,160,67,0.1);">
-        <h3 class="card-title" style="color:var(--accent-green-bright); font-size:13px;">
-          📦 Staged Changes ({{ status.staged|length }})
+        <h3 class="card-title" style="color:var(--accent-green-bright); font-size:13px; display:flex; align-items:center; gap:6px;">
+          <svg class="zit-icon zit-icon-sm"><use href="#icon-staging"></use></svg>
+          <span>Staged Changes ({{ status.staged|length }})</span>
         </h3>
       </div>
-      <div class="card-body" style="padding:4px 0;">
+      <div class="card-body staging-file-list-body" style="padding:4px 0;">
         {% if status.staged %}
           {% for f in status.staged %}
             <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 12px; border-bottom:1px solid var(--border-color); background:{% if selected_file == f.path and diff_type == 'staged' %}var(--bg-hover){% else %}transparent{% endif %};">
@@ -62,13 +134,14 @@
     </div>
 
     <!-- Unstaged Files -->
-    <div class="card" style="margin-bottom:12px;">
+    <div class="card" style="margin-bottom:0;">
       <div class="card-header">
-        <h3 class="card-title" style="color:var(--accent-yellow); font-size:13px;">
-          📝 Unstaged Changes ({{ status.unstaged|length }})
+        <h3 class="card-title" style="color:var(--accent-yellow); font-size:13px; display:flex; align-items:center; gap:6px;">
+          <svg class="zit-icon zit-icon-sm"><use href="#icon-file"></use></svg>
+          <span>Unstaged Changes ({{ status.unstaged|length }})</span>
         </h3>
       </div>
-      <div class="card-body" style="padding:4px 0;">
+      <div class="card-body staging-file-list-body" style="padding:4px 0;">
         {% if status.unstaged %}
           {% for f in status.unstaged %}
             <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 12px; border-bottom:1px solid var(--border-color); background:{% if selected_file == f.path and diff_type == 'unstaged' %}var(--bg-hover){% else %}transparent{% endif %};">
@@ -91,13 +164,14 @@
     </div>
 
     <!-- Untracked Files -->
-    <div class="card">
+    <div class="card" style="margin-bottom:0;">
       <div class="card-header">
-        <h3 class="card-title" style="color:var(--accent-cyan); font-size:13px;">
-          ❓ Untracked Files ({{ status.untracked|length }})
+        <h3 class="card-title" style="color:var(--accent-cyan); font-size:13px; display:flex; align-items:center; gap:6px;">
+          <svg class="zit-icon zit-icon-sm"><use href="#icon-help"></use></svg>
+          <span>Untracked Files ({{ status.untracked|length }})</span>
         </h3>
       </div>
-      <div class="card-body" style="padding:4px 0;">
+      <div class="card-body staging-file-list-body" style="padding:4px 0;">
         {% if status.untracked %}
           {% for f in status.untracked %}
             <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 12px; border-bottom:1px solid var(--border-color);">
@@ -119,11 +193,11 @@
     </div>
   </div>
 
-  <!-- Right Side: Unified Diff Preview & Hunk Operations -->
-  <div>
+  <!-- Right Side: Unified Diff Preview (Fixed size box with internal scroll) -->
+  <div class="staging-diff-panel">
     {% if file_diffs %}
       {% for fd in file_diffs %}
-        <div class="diff-container" style="margin-bottom:16px;">
+        <div class="diff-container" style="border:none; border-radius:0; background:transparent; margin-bottom:0;">
           <div class="diff-file-header">
             <div>
               <span style="color:var(--text-muted);">file:</span> 
@@ -140,6 +214,9 @@
               {% else %}
                 <button class="btn btn-sm" onclick="runGitAction('unstage_file', {path: '{{ fd.path }}'})">Unstage Whole File</button>
               {% endif %}
+              <a href="{% url 'zit:ai_code_mentor' %}?file={{ fd.path }}&type={{ diff_type }}" class="btn btn-sm" style="background:rgba(137,87,229,0.18); border:1px solid var(--accent-purple); color:var(--accent-purple-bright); display:inline-flex; align-items:center;" title="Explain, troubleshoot, and update with AI Mentor">
+                <svg class="zit-icon zit-icon-xs" style="margin-right:5px;"><use href="#icon-mentor"></use></svg>AI Mentor
+              </a>
             </div>
           </div>
 
@@ -179,11 +256,20 @@
         </div>
       {% endfor %}
     {% else %}
-      <div class="card" style="padding:40px; text-align:center;">
-        <h3 style="color:var(--text-muted); font-size:16px; margin-bottom:8px;">No changes to inspect</h3>
-        <p style="color:var(--text-dim); font-size:13px;">
-          Select a file from the list or make changes in your repository.
-        </p>
+      <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:40px; text-align:center;">
+        {% if selected_file %}
+          <div style="margin-bottom:12px; opacity:0.7; color:var(--accent-green-bright);"><svg class="zit-icon zit-icon-xl"><use href="#icon-check"></use></svg></div>
+          <h3 style="color:var(--text-muted); font-size:15px; margin-bottom:8px; font-weight:600;">No {{ diff_type }} changes in <code style="color:var(--accent-blue-bright);">{{ selected_file }}</code></h3>
+          <p style="color:var(--text-dim); font-size:13px; max-width:340px; line-height:1.5;">
+            This file has no remaining {{ diff_type }} modifications. Select another file from the list.
+          </p>
+        {% else %}
+          <div style="margin-bottom:12px; opacity:0.5; color:var(--text-muted);"><svg class="zit-icon zit-icon-xl"><use href="#icon-file"></use></svg></div>
+          <h3 style="color:var(--text-muted); font-size:15px; margin-bottom:8px; font-weight:600;">No File Selected</h3>
+          <p style="color:var(--text-dim); font-size:13px; max-width:340px; line-height:1.5;">
+            Select any file from the list on the left to inspect its diff and stage individual hunks.
+          </p>
+        {% endif %}
       </div>
     {% endif %}
   </div>

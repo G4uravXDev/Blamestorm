@@ -1,17 +1,8 @@
 <footer class="zit-footer">
   <div style="display:flex; align-items:center; gap:12px;">
     <span><strong>Blamestorm</strong> {{ version|default:zit_version }}</span>
-    <span>•</span>
-    <span>AI Provider: 
-      {% if gemini_configured %}
-        <span style="color:var(--accent-green-bright); font-weight:600;">Google Gemini (Model: <span class="font-mono">{{ gemini_model }}</span>)</span>
-      {% else %}
-        <a href="{% url 'zit:settings' %}" style="color:var(--accent-yellow);">Configure Gemini API Key</a>
-      {% endif %}
-    </span>
   </div>
   <div style="display:flex; align-items:center; gap:16px;">
     <span>Press <kbd>?</kbd> for keyboard shortcuts</span>
-    <span>Powered by Django & Google Gemini</span>
   </div>
 </footer>

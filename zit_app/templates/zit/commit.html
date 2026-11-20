@@ -27,7 +27,7 @@
 {% if secrets_found %}
 <div class="alert alert-danger">
   <div>
-    <strong>⚠️ Potential Secrets Detected in Staged Changes!</strong>
+    <strong><svg class="zit-icon zit-icon-sm" style="margin-right:4px; color:var(--accent-red-bright);"><use href="#icon-alert"></use></svg>Potential Secrets Detected in Staged Changes!</strong>
     <p style="font-size:12px; margin-top:4px;">
       Zit's local secret scanning engine detected <strong>{{ secrets_found|length }}</strong> potential sensitive secret(s). Please review before committing to prevent leaks.
     </p>
@@ -44,16 +44,23 @@
   <!-- Left Side: Commit Form & AI Assistant -->
   <div class="card">
     <div class="card-header">
-      <h3 class="card-title">✍️ Compose Commit</h3>
-      <button type="button" class="btn btn-sm" id="btnAiSuggest" onclick="requestAiCommitSuggestions()" style="background:rgba(163,113,247,0.15); color:var(--accent-purple); border-color:var(--accent-purple);">
-        ✨ Suggest with Gemini
+      <h3 class="card-title" style="display:flex; align-items:center; gap:6px;">
+        <svg class="zit-icon zit-icon-sm"><use href="#icon-commit"></use></svg>
+        <span>Compose Commit</span>
+      </h3>
+      <button type="button" class="btn btn-sm" id="btnAiSuggest" onclick="requestAiCommitSuggestions()" style="background:rgba(163,113,247,0.15); color:var(--accent-purple); border-color:var(--accent-purple); display:inline-flex; align-items:center; gap:5px;">
+        <svg class="zit-icon zit-icon-xs"><use href="#icon-mentor"></use></svg>
+        <span>Suggest with Gemini</span>
       </button>
     </div>
     <div class="card-body">
       <!-- AI Suggestions container -->
       <div id="aiSuggestionsBox" style="display:none; margin-bottom:16px; background:var(--bg-primary); border:1px solid var(--accent-purple); border-radius:var(--radius-sm); padding:12px;">
-        <div style="font-size:12px; font-weight:600; color:var(--accent-purple); margin-bottom:8px; display:flex; justify-content:space-between;">
-          <span>🤖 Gemini AI Suggestions (Click to use):</span>
+        <div style="font-size:12px; font-weight:600; color:var(--accent-purple); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="display:inline-flex; align-items:center; gap:5px;">
+            <svg class="zit-icon zit-icon-xs"><use href="#icon-mentor"></use></svg>
+            <span>Gemini AI Suggestions (Click to use):</span>
+          </span>
           <span id="aiLoadingSpinner" style="display:none;">Loading...</span>
         </div>
         <div id="aiSuggestionsList" style="display:flex; flex-direction:column; gap:6px;"></div>
@@ -121,51 +128,35 @@
           <div id="previewBox" class="font-mono" style="font-size:13px; color:var(--accent-cyan); font-weight:600;">feat: ...</div>
         </div>
 
-        <button type="submit" class="btn btn-primary" style="width:100%; padding:10px;" {% if not status.staged %}disabled{% endif %}>
-          🚀 Submit Commit
+        <button type="submit" class="btn btn-primary" style="width:100%; padding:10px; display:inline-flex; align-items:center; justify-content:center; gap:6px;" {% if not status.staged %}disabled{% endif %}>
+          <svg class="zit-icon zit-icon-sm"><use href="#icon-commit"></use></svg>
+          <span>Submit Commit</span>
         </button>
       </form>
     </div>
   </div>
 
-  <!-- Right Side: Staged Changes Diffstat & Preview -->
-  <div>
-    <div class="card">
+  <!-- Right Side: Extended Staged Changes Diffstat Box -->
+  <div style="display: flex; flex-direction: column;">
+    <div class="card" style="flex: 1; display: flex; flex-direction: column; margin-bottom: 0;">
       <div class="card-header">
-        <h3 class="card-title">📊 Staged Diffstat ({{ status.staged|length }} files)</h3>
+        <h3 class="card-title" style="display:flex; align-items:center; gap:6px;">
+          <svg class="zit-icon zit-icon-sm"><use href="#icon-timeline"></use></svg>
+          <span>Staged Diffstat ({{ status.staged|length }} files)</span>
+        </h3>
       </div>
-      <div class="card-body">
+      <div class="card-body" style="flex: 1; display: flex; flex-direction: column; padding: 14px;">
         {% if diffstat %}
-          <pre class="font-mono" style="font-size:12px; color:var(--text-muted); background:var(--bg-primary); padding:10px; border-radius:var(--radius-sm); overflow-x:auto;">{{ diffstat }}</pre>
+          <pre class="font-mono" style="flex: 1; min-height: 420px; font-size: 12.5px; line-height: 1.6; color: var(--text-muted); background: var(--bg-primary); padding: 14px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); overflow: auto; margin: 0; white-space: pre;">{{ diffstat }}</pre>
         {% else %}
-          <p style="font-size:13px; color:var(--text-dim);">No staged statistics available.</p>
-        {% endif %}
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">🔍 Staged Changes Preview</h3>
-      </div>
-      <div class="card-body" style="padding:0; max-height:400px; overflow-y:auto;">
-        {% if staged_diffs %}
-          {% for fd in staged_diffs %}
-            <div style="padding:8px 12px; background:var(--bg-card); border-bottom:1px solid var(--border-color); font-size:12px; font-weight:600;">
-              {{ fd.path }} <span style="color:var(--accent-green-bright);">(+{{ fd.additions }})</span> <span style="color:var(--accent-red);">(-{{ fd.deletions }})</span>
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; text-align: center; color: var(--text-dim); min-height: 380px;">
+            <div style="margin-bottom: 12px; opacity: 0.5; color: var(--text-muted);">
+              <svg class="zit-icon zit-icon-xl"><use href="#icon-timeline"></use></svg>
             </div>
-            {% for hunk in fd.hunks %}
-              <div class="diff-lines" style="font-size:11px;">
-                {% for l in hunk.lines %}
-                  <div class="diff-line diff-line-{{ l.line_type }}">
-                    <span>{{ l.content }}</span>
-                  </div>
-                {% endfor %}
-              </div>
-            {% endfor %}
-          {% endfor %}
-        {% else %}
-          <div style="padding:20px; text-align:center; color:var(--text-dim); font-size:13px;">
-            No staged diff content.
+            <h4 style="color: var(--text-muted); font-size: 14px; margin-bottom: 6px; font-weight: 600;">No Staged Statistics Available</h4>
+            <p style="font-size: 12px; max-width: 280px; line-height: 1.5;">
+              Stage files in <a href="{% url 'zit:staging' %}" style="color: var(--accent-blue-bright);">Smart Staging</a> to see diff statistics and file change metrics here.
+            </p>
           </div>
         {% endif %}
       </div>

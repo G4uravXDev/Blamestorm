@@ -12,6 +12,7 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body class="{% if active_view != 'dashboard' %}has-sidebar{% endif %}">
+  {% include "includes/icons.html" %}
 
   {% include "includes/navbar.html" %}
 

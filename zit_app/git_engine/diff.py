@@ -197,6 +197,12 @@ def get_staged_stat(cwd: Optional[str] = None) -> str:
     return res.stdout if res.success else ""
 
 
+def get_unstaged_stat(cwd: Optional[str] = None) -> str:
+    """Get unstaged diffstat summary."""
+    res = run_git(["diff", "--stat"], cwd=cwd)
+    return res.stdout if res.success else ""
+
+
 def stage_file(path: str, cwd: Optional[str] = None) -> GitResult:
     """Stage a single file or directory."""
     return run_git(["add", "--", path], cwd=cwd)

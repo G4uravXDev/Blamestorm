@@ -1,8 +1,13 @@
 <div id="shortcutsModal" class="modal-overlay">
   <div class="modal-content">
     <div class="modal-header">
-      <h3 class="card-title">⌨️ Keyboard Shortcuts</h3>
-      <button class="btn btn-sm" onclick="closeModal('shortcutsModal')">✕</button>
+      <h3 class="card-title" style="display:flex; align-items:center; gap:8px;">
+        <svg class="zit-icon zit-icon-sm" style="color:var(--accent-cyan);"><use href="#icon-keyboard"></use></svg>
+        <span>Keyboard Shortcuts</span>
+      </h3>
+      <button class="btn btn-sm" onclick="closeModal('shortcutsModal')" aria-label="Close">
+        <svg class="zit-icon zit-icon-xs"><use href="#icon-close"></use></svg>
+      </button>
     </div>
     <div class="modal-body">
       <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
@@ -76,11 +81,6 @@
             <td><kbd>g</kbd></td>
             <td><strong>GitHub</strong></td>
             <td>Remote sync, push, pull, PRs, and Actions</td>
-          </tr>
-          <tr>
-            <td><kbd>a</kbd></td>
-            <td><strong>AI Mentor</strong></td>
-            <td>Explain repo, ask git questions, and diagnose errors</td>
           </tr>
           <tr>
             <td><kbd>A</kbd></td>
