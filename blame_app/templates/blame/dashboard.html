@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard — zit{% endblock %}
+{% block title %}Dashboard — Blamestorm{% endblock %}
 
 {% block content %}
 <div style="margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center;">
@@ -29,7 +29,7 @@
     <button class="btn btn-primary btn-sm" onclick="runGitAction('git_push')" title="Push to tracking branch">
       <svg class="zit-icon zit-icon-xs" style="margin-right:4px;"><use href="#icon-arrow-up"></use></svg>Push
     </button>
-    <a href="{% url 'zit:agent' %}" class="btn btn-blue btn-sm" title="Launch Autonomous Agent (A)">
+    <a href="{% url 'blame:agent' %}" class="btn btn-blue btn-sm" title="Launch Autonomous Agent (A)">
       <svg class="zit-icon zit-icon-xs" style="margin-right:4px;"><use href="#icon-agent"></use></svg>Launch Agent
     </a>
   </div>
@@ -69,7 +69,7 @@
       {{ status.staged|length }}
     </div>
     <div style="font-size:11px; color:var(--text-dim);">
-      Ready to commit (<a href="{% url 'zit:commit' %}">commit <kbd>c</kbd></a>)
+      Ready to commit (<a href="{% url 'blame:commit' %}">commit <kbd>c</kbd></a>)
     </div>
   </div>
 
@@ -79,7 +79,7 @@
       {{ status.unstaged|length }} mod / {{ status.untracked|length }} new
     </div>
     <div style="font-size:11px; color:var(--text-dim);">
-      <a href="{% url 'zit:staging' %}">Review in Staging <kbd>s</kbd></a>
+      <a href="{% url 'blame:staging' %}">Review in Staging <kbd>s</kbd></a>
     </div>
   </div>
 </div>
@@ -89,7 +89,7 @@
   <div>
     <strong>⚠️ Merge Conflicts Detected!</strong> There are {{ status.conflicts|length }} conflicted file(s) requiring resolution.
   </div>
-  <a href="{% url 'zit:merge_resolve' %}" class="btn btn-danger btn-sm">Resolve Conflicts <kbd>m</kbd></a>
+  <a href="{% url 'blame:merge_resolve' %}" class="btn btn-danger btn-sm">Resolve Conflicts <kbd>m</kbd></a>
 </div>
 {% endif %}
 
@@ -104,55 +104,55 @@
         </h3>
       </div>
       <div class="card-body" style="display:flex; flex-direction:column; gap:8px;">
-        <a href="{% url 'zit:staging' %}" class="btn" style="justify-content:space-between;">
+        <a href="{% url 'blame:staging' %}" class="btn" style="justify-content:space-between;">
           <span style="display:inline-flex; align-items:center; gap:8px;"><svg class="zit-icon zit-icon-sm"><use href="#icon-staging"></use></svg> Staging &amp; Diffs</span>
           <kbd>s</kbd>
         </a>
-        <a href="{% url 'zit:commit' %}" class="btn" style="justify-content:space-between;">
+        <a href="{% url 'blame:commit' %}" class="btn" style="justify-content:space-between;">
           <span style="display:inline-flex; align-items:center; gap:8px;"><svg class="zit-icon zit-icon-sm"><use href="#icon-commit"></use></svg> Guided Commit</span>
           <kbd>c</kbd>
         </a>
-        <a href="{% url 'zit:branches' %}" class="btn" style="justify-content:space-between;">
+        <a href="{% url 'blame:branches' %}" class="btn" style="justify-content:space-between;">
           <span style="display:inline-flex; align-items:center; gap:8px;"><svg class="zit-icon zit-icon-sm"><use href="#icon-branch"></use></svg> Branch Manager</span>
           <kbd>b</kbd>
         </a>
-        <a href="{% url 'zit:timeline' %}" class="btn" style="justify-content:space-between;">
+        <a href="{% url 'blame:timeline' %}" class="btn" style="justify-content:space-between;">
           <span style="display:inline-flex; align-items:center; gap:8px;"><svg class="zit-icon zit-icon-sm"><use href="#icon-timeline"></use></svg> Commit Log / Graph</span>
           <kbd>l</kbd>
         </a>
-        <a href="{% url 'zit:time_travel' %}" class="btn" style="justify-content:space-between;">
+        <a href="{% url 'blame:time_travel' %}" class="btn" style="justify-content:space-between;">
           <span style="display:inline-flex; align-items:center; gap:8px;"><svg class="zit-icon zit-icon-sm"><use href="#icon-time-travel"></use></svg> Safe Reset / Time Travel</span>
           <kbd>t</kbd>
         </a>
-        <a href="{% url 'zit:reflog' %}" class="btn" style="justify-content:space-between;">
+        <a href="{% url 'blame:reflog' %}" class="btn" style="justify-content:space-between;">
           <span style="display:inline-flex; align-items:center; gap:8px;"><svg class="zit-icon zit-icon-sm"><use href="#icon-reflog"></use></svg> Reflog Recovery</span>
           <kbd>r</kbd>
         </a>
-        <a href="{% url 'zit:stash' %}" class="btn" style="justify-content:space-between;">
+        <a href="{% url 'blame:stash' %}" class="btn" style="justify-content:space-between;">
           <span style="display:inline-flex; align-items:center; gap:8px;"><svg class="zit-icon zit-icon-sm"><use href="#icon-stash"></use></svg> Stash Manager</span>
           <kbd>x</kbd>
         </a>
-        <a href="{% url 'zit:merge_resolve' %}" class="btn" style="justify-content:space-between;">
+        <a href="{% url 'blame:merge_resolve' %}" class="btn" style="justify-content:space-between;">
           <span style="display:inline-flex; align-items:center; gap:8px;"><svg class="zit-icon zit-icon-sm"><use href="#icon-merge"></use></svg> Merge &amp; Conflicts</span>
           <kbd>m</kbd>
         </a>
-        <a href="{% url 'zit:bisect' %}" class="btn" style="justify-content:space-between;">
+        <a href="{% url 'blame:bisect' %}" class="btn" style="justify-content:space-between;">
           <span style="display:inline-flex; align-items:center; gap:8px;"><svg class="zit-icon zit-icon-sm"><use href="#icon-bisect"></use></svg> Git Bisect Debugger</span>
           <kbd>B</kbd>
         </a>
-        <a href="{% url 'zit:cherry_pick' %}" class="btn" style="justify-content:space-between;">
+        <a href="{% url 'blame:cherry_pick' %}" class="btn" style="justify-content:space-between;">
           <span style="display:inline-flex; align-items:center; gap:8px;"><svg class="zit-icon zit-icon-sm"><use href="#icon-cherry-pick"></use></svg> Cherry Pick</span>
           <kbd>p</kbd>
         </a>
-        <a href="{% url 'zit:workflow_builder' %}" class="btn" style="justify-content:space-between;">
+        <a href="{% url 'blame:workflow_builder' %}" class="btn" style="justify-content:space-between;">
           <span style="display:inline-flex; align-items:center; gap:8px;"><svg class="zit-icon zit-icon-sm"><use href="#icon-workflow"></use></svg> Workflow Builder</span>
           <kbd>w</kbd>
         </a>
-        <a href="{% url 'zit:github' %}" class="btn" style="justify-content:space-between;">
+        <a href="{% url 'blame:github' %}" class="btn" style="justify-content:space-between;">
           <span style="display:inline-flex; align-items:center; gap:8px;"><svg class="zit-icon zit-icon-sm"><use href="#icon-github"></use></svg> GitHub Integration</span>
           <kbd>g</kbd>
         </a>
-        <a href="{% url 'zit:agent' %}" class="btn btn-blue" style="justify-content:space-between; font-weight:700;">
+        <a href="{% url 'blame:agent' %}" class="btn btn-blue" style="justify-content:space-between; font-weight:700;">
           <span style="display:inline-flex; align-items:center; gap:8px;"><svg class="zit-icon zit-icon-sm"><use href="#icon-agent"></use></svg> Autonomous Agent Mode</span>
           <kbd>A</kbd>
         </a>
@@ -187,7 +187,7 @@
           <svg class="zit-icon zit-icon-sm"><use href="#icon-timeline"></use></svg>
           <span>Recent Commits on {{ status.branch }}</span>
         </h3>
-        <a href="{% url 'zit:timeline' %}" class="btn btn-sm">View Full History <kbd>l</kbd></a>
+        <a href="{% url 'blame:timeline' %}" class="btn btn-sm">View Full History <kbd>l</kbd></a>
       </div>
       <div class="card-body" style="padding:0;">
         {% if recent_commits %}
@@ -204,7 +204,7 @@
               {% for c in recent_commits %}
                 <tr>
                   <td>
-                    <a href="{% url 'zit:timeline' %}?commit={{ c.hash }}" class="font-mono" style="color:var(--accent-blue); font-weight:600;">
+                    <a href="{% url 'blame:timeline' %}?commit={{ c.hash }}" class="font-mono" style="color:var(--accent-blue); font-weight:600;">
                       {{ c.short_hash }}
                     </a>
                   </td>
@@ -232,7 +232,7 @@
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">🌐 Configured Remotes</h3>
-        <a href="{% url 'zit:github' %}" class="btn btn-sm">Manage Remotes <kbd>g</kbd></a>
+        <a href="{% url 'blame:github' %}" class="btn btn-sm">Manage Remotes <kbd>g</kbd></a>
       </div>
       <div class="card-body">
         {% if remotes %}
@@ -270,3 +270,4 @@ function saveQuickStash() {
 }
 </script>
 {% endblock %}
+

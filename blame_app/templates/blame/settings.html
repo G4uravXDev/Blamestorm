@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Settings — zit{% endblock %}
+{% block title %}Settings — Blamestorm{% endblock %}
 
 {% block content %}
 <div style="margin-bottom: 16px;">
@@ -17,7 +17,7 @@
       <h3 class="card-title">🤖 Google Gemini API Configuration</h3>
     </div>
     <div class="card-body">
-      <form method="POST" action="{% url 'zit:settings' %}">
+      <form method="POST" action="{% url 'blame:settings' %}">
         {% csrf_token %}
 
         <div class="form-group">
@@ -196,3 +196,4 @@ async function testGeminiConnection() {
 }
 </script>
 {% endblock %}
+

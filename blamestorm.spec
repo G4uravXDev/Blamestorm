@@ -7,14 +7,14 @@ block_cipher = None
 
 # Collect all Django and application modules
 django_datas, django_binaries, django_hiddenimports = collect_all('django')
-zit_app_datas, zit_app_binaries, zit_app_hiddenimports = collect_all('zit_app')
+blame_app_datas, blame_app_binaries, blame_app_hiddenimports = collect_all('blame_app')
 google_genai_datas, google_genai_binaries, google_genai_hiddenimports = collect_all('google.genai')
 
 datas = [
-    ('zit_app/templates', 'zit_app/templates'),
-    ('zit_app/static', 'zit_app/static'),
-    ('zit_app/migrations', 'zit_app/migrations'),
-] + django_datas + zit_app_datas + google_genai_datas
+    ('blame_app/templates', 'blame_app/templates'),
+    ('blame_app/static', 'blame_app/static'),
+    ('blame_app/migrations', 'blame_app/migrations'),
+] + django_datas + blame_app_datas + google_genai_datas
 
 hiddenimports = [
     'django.contrib.admin',
@@ -35,34 +35,34 @@ hiddenimports = [
     'django.db.backends.sqlite3',
     'django.core.management.commands.runserver',
     'django.core.management.commands.migrate',
-    'zit_core',
-    'zit_core.settings',
-    'zit_core.urls',
-    'zit_core.wsgi',
-    'zit_app',
-    'zit_app.models',
-    'zit_app.views',
-    'zit_app.urls',
-    'zit_app.context_processors',
-    'zit_app.git_engine',
-    'zit_app.git_engine.runner',
-    'zit_app.git_engine.status',
-    'zit_app.git_engine.diff',
-    'zit_app.git_engine.log',
-    'zit_app.git_engine.branch',
-    'zit_app.git_engine.remote',
-    'zit_app.git_engine.stash',
-    'zit_app.git_engine.merge',
-    'zit_app.git_engine.bisect',
-    'zit_app.git_engine.cherry_pick',
-    'zit_app.git_engine.time_travel',
-    'zit_app.git_engine.reflog',
-    'zit_app.git_engine.secrets',
-    'zit_app.ai_engine',
-    'zit_app.ai_engine.gemini_client',
-    'zit_app.ai_engine.prompts',
-    'zit_app.ai_engine.agent_runner',
-] + django_hiddenimports + zit_app_hiddenimports + google_genai_hiddenimports
+    'blame_core',
+    'blame_core.settings',
+    'blame_core.urls',
+    'blame_core.wsgi',
+    'blame_app',
+    'blame_app.models',
+    'blame_app.views',
+    'blame_app.urls',
+    'blame_app.context_processors',
+    'blame_app.git_engine',
+    'blame_app.git_engine.runner',
+    'blame_app.git_engine.status',
+    'blame_app.git_engine.diff',
+    'blame_app.git_engine.log',
+    'blame_app.git_engine.branch',
+    'blame_app.git_engine.remote',
+    'blame_app.git_engine.stash',
+    'blame_app.git_engine.merge',
+    'blame_app.git_engine.bisect',
+    'blame_app.git_engine.cherry_pick',
+    'blame_app.git_engine.time_travel',
+    'blame_app.git_engine.reflog',
+    'blame_app.git_engine.secrets',
+    'blame_app.ai_engine',
+    'blame_app.ai_engine.gemini_client',
+    'blame_app.ai_engine.prompts',
+    'blame_app.ai_engine.agent_runner',
+] + django_hiddenimports + blame_app_hiddenimports + google_genai_hiddenimports
 
 # Deduplicate hiddenimports
 hiddenimports = list(set(hiddenimports))
@@ -70,7 +70,7 @@ hiddenimports = list(set(hiddenimports))
 a = Analysis(
     ['blamestorm.py'],
     pathex=['.'],
-    binaries=django_binaries + zit_app_binaries + google_genai_binaries,
+    binaries=django_binaries + blame_app_binaries + google_genai_binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
@@ -107,3 +107,4 @@ exe = EXE(
     entitlements_file=None,
     icon=None,
 )
+

@@ -1,5 +1,9 @@
 from django.apps import AppConfig
 
 
-class ZitAppConfig(AppConfig):
-    name = "zit_app"
+class BlameAppConfig(AppConfig):
+    name = "blame_app"
+
+
+# Backward-compatible alias
+ZitAppConfig = BlameAppConfig

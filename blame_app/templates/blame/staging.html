@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Smart Staging — zit{% endblock %}
+{% block title %}Smart Staging — Blamestorm{% endblock %}
 
 {% block content %}
 <div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
@@ -13,10 +13,10 @@
   <div style="display:flex; gap:8px;">
     <button class="btn btn-sm" onclick="runGitAction('unstage_all')" title="Unstage all files">Unstage All</button>
     <button class="btn btn-primary btn-sm" onclick="runGitAction('stage_all')" title="Stage all changes">Stage All (+A)</button>
-    <a href="{% url 'zit:ai_code_mentor' %}{% if selected_file %}?file={{ selected_file }}&type={{ diff_type }}{% endif %}" class="btn btn-sm" style="background:rgba(137,87,229,0.18); border:1px solid var(--accent-purple); color:var(--accent-purple-bright); font-weight:600; display:inline-flex; align-items:center;" title="Open AI Code Mentor Studio to explain and update file">
+    <a href="{% url 'blame:ai_code_mentor' %}{% if selected_file %}?file={{ selected_file }}&type={{ diff_type }}{% endif %}" class="btn btn-sm" style="background:rgba(137,87,229,0.18); border:1px solid var(--accent-purple); color:var(--accent-purple-bright); font-weight:600; display:inline-flex; align-items:center;" title="Open AI Code Mentor Studio to explain and update file">
       <svg class="zit-icon zit-icon-xs" style="margin-right:5px;"><use href="#icon-mentor"></use></svg>AI Mentor
     </a>
-    <a href="{% url 'zit:commit' %}" class="btn btn-blue btn-sm">Proceed to Commit <kbd>c</kbd></a>
+    <a href="{% url 'blame:commit' %}" class="btn btn-blue btn-sm">Proceed to Commit <kbd>c</kbd></a>
   </div>
 </div>
 
@@ -214,7 +214,7 @@
               {% else %}
                 <button class="btn btn-sm" onclick="runGitAction('unstage_file', {path: '{{ fd.path }}'})">Unstage Whole File</button>
               {% endif %}
-              <a href="{% url 'zit:ai_code_mentor' %}?file={{ fd.path }}&type={{ diff_type }}" class="btn btn-sm" style="background:rgba(137,87,229,0.18); border:1px solid var(--accent-purple); color:var(--accent-purple-bright); display:inline-flex; align-items:center;" title="Explain, troubleshoot, and update with AI Mentor">
+              <a href="{% url 'blame:ai_code_mentor' %}?file={{ fd.path }}&type={{ diff_type }}" class="btn btn-sm" style="background:rgba(137,87,229,0.18); border:1px solid var(--accent-purple); color:var(--accent-purple-bright); display:inline-flex; align-items:center;" title="Explain, troubleshoot, and update with AI Mentor">
                 <svg class="zit-icon zit-icon-xs" style="margin-right:5px;"><use href="#icon-mentor"></use></svg>AI Mentor
               </a>
             </div>
@@ -309,3 +309,4 @@ function unstageSingleHunk(path, idx) {
 }
 </script>
 {% endblock %}
+

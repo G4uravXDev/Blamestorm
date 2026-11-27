@@ -3,10 +3,10 @@ from .git_engine.runner import get_repo_root, is_git_repo
 from .git_engine.status import get_status
 
 
-def zit_context(request):
+def blame_context(request):
     """Context processor providing repository and app status to all templates."""
     # Find active repo path from session or environment
-    env_repo = os.environ.get("ZIT_REPO_PATH")
+    env_repo = os.environ.get("BLAME_REPO_PATH") or os.environ.get("ZIT_REPO_PATH")
     session_repo = request.session.get("current_repo_path")
     launched_repo = request.session.get("launched_repo")
 
@@ -32,8 +32,8 @@ def zit_context(request):
     gemini_model = request.session.get("gemini_model")
     if not gemini_key or not gemini_model:
         try:
-            from .models import ZitConfig
-            config = ZitConfig.get_solo()
+            from .models import BlameConfig
+            config = BlameConfig.get_solo()
             if not gemini_key:
                 gemini_key = config.gemini_api_key or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
             if not gemini_model:
@@ -48,8 +48,14 @@ def zit_context(request):
         "current_repo_path": active_repo,
         "repo_is_valid": repo_is_valid,
         "repo_status": repo_status,
+        "status": repo_status,
         "gemini_configured": bool(gemini_key),
         "gemini_model": gemini_model,
         "version": "v1.0.0 (Django Edition)",
+        "blame_version": "v1.0.0 (Django Edition)",
         "zit_version": "v1.0.0 (Django Edition)",
     }
+
+
+# Backward-compatible alias
+zit_context = blame_context

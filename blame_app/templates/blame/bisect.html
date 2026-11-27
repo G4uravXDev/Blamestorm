@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Git Bisect — zit{% endblock %}
+{% block title %}Git Bisect — Blamestorm{% endblock %}
 
 {% block content %}
 <div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
@@ -23,7 +23,7 @@
     <h3 style="font-size:16px; font-weight:700; margin-bottom:4px;">🎯 Offending Commit Found!</h3>
     <p style="font-size:13px;">{{ bisect_status.summary }}</p>
     <div style="margin-top:8px;">
-      <a href="{% url 'zit:timeline' %}?commit={{ bisect_status.first_bad_commit }}" class="btn btn-sm">Inspect Bad Commit</a>
+      <a href="{% url 'blame:timeline' %}?commit={{ bisect_status.first_bad_commit }}" class="btn btn-sm">Inspect Bad Commit</a>
       <button class="btn btn-sm" onclick="runGitAction('bisect_reset')">Reset Bisect Session</button>
     </div>
   </div>
@@ -154,3 +154,4 @@ function submitStartBisect() {
 }
 </script>
 {% endblock %}
+

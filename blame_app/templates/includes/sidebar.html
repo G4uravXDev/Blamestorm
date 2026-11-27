@@ -216,87 +216,88 @@ body.sidebar-expanded .zit-layout-with-sidebar .zit-main-area {
   </div>
 
   <nav class="sidebar-menu">
-    <a href="{% url 'zit:dashboard' %}" class="sidebar-item {% if active_view == 'dashboard' %}active{% endif %}" data-tooltip="Dashboard (Home)">
+    <a href="{% url 'blame:dashboard' %}" class="sidebar-item {% if active_view == 'dashboard' %}active{% endif %}" data-tooltip="Dashboard (Home)">
       <span class="sidebar-item-icon"><svg class="zit-icon zit-icon-md"><use href="#icon-home"></use></svg></span>
       <span class="sidebar-item-label">Dashboard</span>
     </a>
 
-    <a href="{% url 'zit:staging' %}" class="sidebar-item {% if active_view == 'staging' %}active{% endif %}" data-tooltip="Smart Staging (s)">
+    <a href="{% url 'blame:staging' %}" class="sidebar-item {% if active_view == 'staging' %}active{% endif %}" data-tooltip="Smart Staging (s)">
       <span class="sidebar-item-icon"><svg class="zit-icon zit-icon-md"><use href="#icon-staging"></use></svg></span>
       <span class="sidebar-item-label">Staging</span>
       <span class="sidebar-item-badge"><kbd>s</kbd></span>
     </a>
 
-    <a href="{% url 'zit:commit' %}" class="sidebar-item {% if active_view == 'commit' %}active{% endif %}" data-tooltip="Guided Commit (c)">
+    <a href="{% url 'blame:commit' %}" class="sidebar-item {% if active_view == 'commit' %}active{% endif %}" data-tooltip="Guided Commit (c)">
       <span class="sidebar-item-icon"><svg class="zit-icon zit-icon-md"><use href="#icon-commit"></use></svg></span>
       <span class="sidebar-item-label">Commit</span>
       <span class="sidebar-item-badge"><kbd>c</kbd></span>
     </a>
 
-    <a href="{% url 'zit:branches' %}" class="sidebar-item {% if active_view == 'branches' %}active{% endif %}" data-tooltip="Branches (b)">
+    <a href="{% url 'blame:branches' %}" class="sidebar-item {% if active_view == 'branches' %}active{% endif %}" data-tooltip="Branches (b)">
       <span class="sidebar-item-icon"><svg class="zit-icon zit-icon-md"><use href="#icon-branch"></use></svg></span>
       <span class="sidebar-item-label">Branches</span>
       <span class="sidebar-item-badge"><kbd>b</kbd></span>
     </a>
 
-    <a href="{% url 'zit:timeline' %}" class="sidebar-item {% if active_view == 'timeline' %}active{% endif %}" data-tooltip="Log & Graph (l)">
+    <a href="{% url 'blame:timeline' %}" class="sidebar-item {% if active_view == 'timeline' %}active{% endif %}" data-tooltip="Log & Graph (l)">
       <span class="sidebar-item-icon"><svg class="zit-icon zit-icon-md"><use href="#icon-timeline"></use></svg></span>
       <span class="sidebar-item-label">Log &amp; Graph</span>
       <span class="sidebar-item-badge"><kbd>l</kbd></span>
     </a>
 
-    <a href="{% url 'zit:time_travel' %}" class="sidebar-item {% if active_view == 'time_travel' %}active{% endif %}" data-tooltip="Time Travel / Safe Reset (t)">
+    <a href="{% url 'blame:time_travel' %}" class="sidebar-item {% if active_view == 'time_travel' %}active{% endif %}" data-tooltip="Time Travel / Safe Reset (t)">
       <span class="sidebar-item-icon"><svg class="zit-icon zit-icon-md"><use href="#icon-time-travel"></use></svg></span>
       <span class="sidebar-item-label">Time Travel</span>
       <span class="sidebar-item-badge"><kbd>t</kbd></span>
     </a>
 
-    <a href="{% url 'zit:reflog' %}" class="sidebar-item {% if active_view == 'reflog' %}active{% endif %}" data-tooltip="Reflog Recovery (r)">
+    <a href="{% url 'blame:reflog' %}" class="sidebar-item {% if active_view == 'reflog' %}active{% endif %}" data-tooltip="Reflog Recovery (r)">
       <span class="sidebar-item-icon"><svg class="zit-icon zit-icon-md"><use href="#icon-reflog"></use></svg></span>
       <span class="sidebar-item-label">Reflog</span>
       <span class="sidebar-item-badge"><kbd>r</kbd></span>
     </a>
 
-    <a href="{% url 'zit:stash' %}" class="sidebar-item {% if active_view == 'stash' %}active{% endif %}" data-tooltip="Stash Manager (x)">
+    <a href="{% url 'blame:stash' %}" class="sidebar-item {% if active_view == 'stash' %}active{% endif %}" data-tooltip="Stash Manager (x)">
       <span class="sidebar-item-icon"><svg class="zit-icon zit-icon-md"><use href="#icon-stash"></use></svg></span>
       <span class="sidebar-item-label">Stash</span>
       <span class="sidebar-item-badge"><kbd>x</kbd></span>
     </a>
 
-    <a href="{% url 'zit:merge_resolve' %}" class="sidebar-item {% if active_view == 'merge_resolve' %}active{% endif %}" data-tooltip="Merge Resolve (m)">
+    <a href="{% url 'blame:merge_resolve' %}" class="sidebar-item {% if active_view == 'merge_resolve' %}active{% endif %}" data-tooltip="Merge Resolve (m)">
       <span class="sidebar-item-icon"><svg class="zit-icon zit-icon-md"><use href="#icon-merge"></use></svg></span>
       <span class="sidebar-item-label">Merge Resolve</span>
       <span class="sidebar-item-badge"><kbd>m</kbd></span>
     </a>
 
-    <a href="{% url 'zit:bisect' %}" class="sidebar-item {% if active_view == 'bisect' %}active{% endif %}" data-tooltip="Git Bisect (B)">
+    <a href="{% url 'blame:bisect' %}" class="sidebar-item {% if active_view == 'bisect' %}active{% endif %}" data-tooltip="Git Bisect (B)">
       <span class="sidebar-item-icon"><svg class="zit-icon zit-icon-md"><use href="#icon-bisect"></use></svg></span>
       <span class="sidebar-item-label">Git Bisect</span>
       <span class="sidebar-item-badge"><kbd>B</kbd></span>
     </a>
 
-    <a href="{% url 'zit:cherry_pick' %}" class="sidebar-item {% if active_view == 'cherry_pick' %}active{% endif %}" data-tooltip="Cherry Pick (p)">
+    <a href="{% url 'blame:cherry_pick' %}" class="sidebar-item {% if active_view == 'cherry_pick' %}active{% endif %}" data-tooltip="Cherry Pick (p)">
       <span class="sidebar-item-icon"><svg class="zit-icon zit-icon-md"><use href="#icon-cherry-pick"></use></svg></span>
       <span class="sidebar-item-label">Cherry Pick</span>
       <span class="sidebar-item-badge"><kbd>p</kbd></span>
     </a>
 
-    <a href="{% url 'zit:workflow_builder' %}" class="sidebar-item {% if active_view == 'workflow_builder' %}active{% endif %}" data-tooltip="CI/CD Workflow (w)">
+    <a href="{% url 'blame:workflow_builder' %}" class="sidebar-item {% if active_view == 'workflow_builder' %}active{% endif %}" data-tooltip="CI/CD Workflow (w)">
       <span class="sidebar-item-icon"><svg class="zit-icon zit-icon-md"><use href="#icon-workflow"></use></svg></span>
       <span class="sidebar-item-label">Workflow</span>
       <span class="sidebar-item-badge"><kbd>w</kbd></span>
     </a>
 
-    <a href="{% url 'zit:github' %}" class="sidebar-item {% if active_view == 'github' %}active{% endif %}" data-tooltip="GitHub Integration (g)">
+    <a href="{% url 'blame:github' %}" class="sidebar-item {% if active_view == 'github' %}active{% endif %}" data-tooltip="GitHub Integration (g)">
       <span class="sidebar-item-icon"><svg class="zit-icon zit-icon-md"><use href="#icon-github"></use></svg></span>
       <span class="sidebar-item-label">GitHub</span>
       <span class="sidebar-item-badge"><kbd>g</kbd></span>
     </a>
 
-    <a href="{% url 'zit:agent' %}" class="sidebar-item {% if active_view == 'agent' %}active{% endif %}" data-tooltip="Autonomous Agent (A)" style="color:#39c5cf; font-weight:700;">
+    <a href="{% url 'blame:agent' %}" class="sidebar-item {% if active_view == 'agent' %}active{% endif %}" data-tooltip="Autonomous Agent (A)" style="color:#39c5cf; font-weight:700;">
       <span class="sidebar-item-icon"><svg class="zit-icon zit-icon-md"><use href="#icon-agent"></use></svg></span>
       <span class="sidebar-item-label">Agent Mode</span>
       <span class="sidebar-item-badge"><kbd>A</kbd></span>
     </a>
   </nav>
 </aside>
+

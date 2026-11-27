@@ -520,7 +520,7 @@
   <!-- Studio Top Navigation Bar -->
   <div class="studio-header">
     <div style="display:flex; align-items:center; gap:12px;">
-      <a href="{% url 'zit:staging' %}{% if file_path %}?file={{ file_path }}&type={{ diff_type }}{% endif %}" class="btn btn-sm" title="Return to Smart Staging">
+      <a href="{% url 'blame:staging' %}{% if file_path %}?file={{ file_path }}&type={{ diff_type }}{% endif %}" class="btn btn-sm" title="Return to Smart Staging">
         ← Staging
       </a>
       <h2 style="font-size:15px; font-weight:700; margin:0; display:flex; align-items:center; gap:8px;">
@@ -690,7 +690,7 @@ let historyIndex = -1;
 
 function switchStudioFile(newPath) {
   if (!newPath) return;
-  window.location.href = `{% url 'zit:ai_code_mentor' %}?file=${encodeURIComponent(newPath)}&type={{ diff_type }}`;
+  window.location.href = `{% url 'blame:ai_code_mentor' %}?file=${encodeURIComponent(newPath)}&type={{ diff_type }}`;
 }
 
 function focusTerminal() {
@@ -823,7 +823,7 @@ async function executeCliCommand(cmdText) {
   scrollTerminalToBottom();
 
   try {
-    const res = await fetch("{% url 'zit:api_ai_code_mentor_query' %}", {
+    const res = await fetch("{% url 'blame:api_ai_code_mentor_query' %}", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -942,7 +942,7 @@ async function applySuggestedCode() {
   applyBtn.innerHTML = '<svg class="zit-icon zit-icon-xs" style="margin-right:4px;"><use href="#icon-refresh"></use></svg> Saving...';
 
   try {
-    const res = await fetch("{% url 'zit:api_ai_code_mentor_apply' %}", {
+    const res = await fetch("{% url 'blame:api_ai_code_mentor_apply' %}", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1145,3 +1145,4 @@ function copySuggestedCode() {
 })();
 </script>
 {% endblock %}
+

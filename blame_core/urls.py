@@ -1,10 +1,10 @@
 """
-URL configuration for zit_core project.
+URL configuration for blame_core project.
 """
 from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include("zit_app.urls")),
+    path("", include("blame_app.urls")),
 ]

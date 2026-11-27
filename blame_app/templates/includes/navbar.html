@@ -1,6 +1,6 @@
 <header class="zit-navbar">
   <div class="nav-brand">
-    <a href="{% url 'zit:dashboard' %}" class="nav-logo">
+    <a href="{% url 'blame:dashboard' %}" class="nav-logo">
       <span style="color:#39c5cf;">&gt;</span>Blamestorm<span style="color:var(--accent-green-bright); font-size:12px;">.py</span>
     </a>
     <div class="nav-repo-info" onclick="openModal('repoModal')" title="Click to switch working repository">
@@ -23,15 +23,16 @@
 
   <div class="nav-actions">
     {% if active_view != 'dashboard' %}
-      <a href="{% url 'zit:dashboard' %}" class="btn btn-sm" title="Return to Dashboard">
+      <a href="{% url 'blame:dashboard' %}" class="btn btn-sm" title="Return to Dashboard">
         <svg class="zit-icon zit-icon-sm" style="margin-right:4px;"><use href="#icon-home"></use></svg>Dashboard
       </a>
     {% endif %}
     <button class="btn btn-sm" onclick="openModal('shortcutsModal')" title="Keyboard Shortcuts (?)">
       <kbd>?</kbd> Help
     </button>
-    <a href="{% url 'zit:settings' %}" class="btn btn-sm" title="Settings & Gemini Model" aria-label="Settings">
+    <a href="{% url 'blame:settings' %}" class="btn btn-sm" title="Settings & Gemini Model" aria-label="Settings">
       <svg class="zit-icon zit-icon-sm"><use href="#icon-settings"></use></svg>
     </a>
   </div>
 </header>
+

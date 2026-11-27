@@ -53,11 +53,11 @@ def find_available_port(start_port: int = 8000, host: str = "127.0.0.1", max_att
 
 def print_active_repo_details(target_repo: str, web_url: str = None):
     """Print comprehensive, formatted details of the active git repository."""
-    from zit_app.git_engine.runner import is_git_repo, get_repo_root
-    from zit_app.git_engine.status import get_status
-    from zit_app.git_engine.log import get_commit_history
-    from zit_app.git_engine.remote import get_remotes
-    from zit_app.models import ZitConfig
+    from blame_app.git_engine.runner import is_git_repo, get_repo_root
+    from blame_app.git_engine.status import get_status
+    from blame_app.git_engine.log import get_commit_history
+    from blame_app.git_engine.remote import get_remotes
+    from blame_app.models import BlameConfig
 
     is_valid = is_git_repo(target_repo)
     repo_root = get_repo_root(target_repo) if is_valid else target_repo
@@ -144,7 +144,7 @@ def print_active_repo_details(target_repo: str, web_url: str = None):
 
     # AI Configuration Status
     try:
-        config = ZitConfig.get_solo()
+        config = BlameConfig.get_solo()
         api_key = config.gemini_api_key or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
         ai_status = f"Configured [Model: {config.gemini_model}]" if api_key else "Not configured (set in Settings or GEMINI_API_KEY)"
         print(f"\n  [AI] AI Engine      : Google Gemini -- {ai_status}")
@@ -210,8 +210,8 @@ Examples:
 
     # 2. Determine target repository
     target_repo = os.path.abspath(args.repo or initial_cwd)
-    os.environ["ZIT_REPO_PATH"] = target_repo
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "zit_core.settings")
+    os.environ["BLAME_REPO_PATH"] = target_repo
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "blame_core.settings")
 
     # 3. Setup Django environment in-process
     import django
@@ -266,3 +266,4 @@ Examples:
 
 if __name__ == "__main__":
     main()
+

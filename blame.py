@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-zit -> Blamestorm alias launcher.
+blame -> Blamestorm alias launcher.
 """
 from blamestorm import main
 

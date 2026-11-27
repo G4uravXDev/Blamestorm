@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/zit.css' %}?v={% now 'U' %}">
+  <link rel="stylesheet" href="{% static 'css/blame.css' %}?v={% now 'U' %}">
   {% block extra_head %}{% endblock %}
 </head>
 <body class="{% if active_view != 'dashboard' %}has-sidebar{% endif %}">
@@ -55,7 +55,8 @@
   {% include "includes/shortcuts_modal.html" %}
   {% include "includes/repo_selector_modal.html" %}
 
-  <script src="{% static 'js/zit.js' %}?v={% now 'U' %}"></script>
+  <script src="{% static 'js/blame.js' %}?v={% now 'U' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>
+

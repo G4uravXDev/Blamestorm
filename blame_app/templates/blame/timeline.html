@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Timeline & Log — zit{% endblock %}
+{% block title %}Timeline & Log — Blamestorm{% endblock %}
 
 {% block content %}
 <div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
@@ -10,11 +10,11 @@
       Explore commit history, inspect visual branch topology, and examine commit diffs.
     </p>
   </div>
-  <form method="GET" action="{% url 'zit:timeline' %}" style="display:flex; gap:8px;">
+  <form method="GET" action="{% url 'blame:timeline' %}" style="display:flex; gap:8px;">
     <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Search commit message or author..." style="width:260px; font-size:12px;">
     <button type="submit" class="btn btn-sm">Search</button>
     {% if search_query %}
-      <a href="{% url 'zit:timeline' %}" class="btn btn-sm">Clear</a>
+      <a href="{% url 'blame:timeline' %}" class="btn btn-sm">Clear</a>
     {% endif %}
   </form>
 </div>
@@ -148,3 +148,4 @@ function toggleGraph() {
 }
 </script>
 {% endblock %}
+

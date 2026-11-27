@@ -271,8 +271,8 @@ def get_ai_client(request=None) -> GeminiClient:
 
     if not api_key or not model:
         try:
-            from ..models import ZitConfig
-            config = ZitConfig.get_solo()
+            from ..models import BlameConfig
+            config = BlameConfig.get_solo()
             if not api_key and config.gemini_api_key:
                 api_key = config.gemini_api_key
             if not model and config.gemini_model:

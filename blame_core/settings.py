@@ -1,5 +1,5 @@
 """
-Django settings for zit_core project.
+Django settings for blame_core project.
 """
 
 from pathlib import Path
@@ -30,7 +30,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "zit_app",
+    "blame_app",
 ]
 
 MIDDLEWARE = [
@@ -43,25 +43,25 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "zit_core.urls"
+ROOT_URLCONF = "blame_core.urls"
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "zit_app" / "templates"],
+        "DIRS": [BASE_DIR / "blame_app" / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "zit_app.context_processors.zit_context",
+                "blame_app.context_processors.blame_context",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = "zit_core.wsgi.application"
+WSGI_APPLICATION = "blame_core.wsgi.application"
 
 DATABASES = {
     "default": {
@@ -79,7 +79,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [
-    BASE_DIR / "zit_app" / "static",
+    BASE_DIR / "blame_app" / "static",
 ]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

@@ -8,7 +8,7 @@ from .git_engine.diff import parse_diff_output
 from .git_engine.secrets import scan_diff_content, scan_file_content, redact_match
 from .ai_engine.prompts import get_system_prompt, format_context
 from .ai_engine.agent_runner import classify_command_safety, parse_agent_response
-from .models import ZitConfig
+from .models import BlameConfig
 
 
 class GitEngineTests(TestCase):
@@ -81,23 +81,23 @@ class ViewTests(TestCase):
 
     def test_all_views_render(self):
         views_to_test = [
-            "zit:dashboard",
-            "zit:staging",
-            "zit:commit",
-            "zit:branches",
-            "zit:timeline",
-            "zit:time_travel",
-            "zit:reflog",
-            "zit:stash",
-            "zit:merge_resolve",
-            "zit:bisect",
-            "zit:cherry_pick",
-            "zit:workflow_builder",
-            "zit:github",
-            "zit:ai_mentor",
-            "zit:ai_code_mentor",
-            "zit:agent",
-            "zit:settings",
+            "blame:dashboard",
+            "blame:staging",
+            "blame:commit",
+            "blame:branches",
+            "blame:timeline",
+            "blame:time_travel",
+            "blame:reflog",
+            "blame:stash",
+            "blame:merge_resolve",
+            "blame:bisect",
+            "blame:cherry_pick",
+            "blame:workflow_builder",
+            "blame:github",
+            "blame:ai_mentor",
+            "blame:ai_code_mentor",
+            "blame:agent",
+            "blame:settings",
         ]
         for v in views_to_test:
             resp = self.client.get(reverse(v))
@@ -114,15 +114,15 @@ class ViewTests(TestCase):
             "secrets_allowlist": "",
             "active_repo_path": ""
         }
-        resp = self.client.post(reverse("zit:settings"), post_data)
+        resp = self.client.post(reverse("blame:settings"), post_data)
         self.assertEqual(resp.status_code, 302)
 
-        config = ZitConfig.get_solo()
+        config = BlameConfig.get_solo()
         self.assertEqual(config.gemini_model, "gemini-2.0-flash-thinking-exp")
         self.assertEqual(self.client.session.get("gemini_model"), "gemini-2.0-flash-thinking-exp")
 
         # 2. Check settings view detects custom model
-        get_resp = self.client.get(reverse("zit:settings"))
+        get_resp = self.client.get(reverse("blame:settings"))
         self.assertEqual(get_resp.status_code, 200)
         self.assertTrue(get_resp.context["is_custom_model"])
 
@@ -133,7 +133,7 @@ class ViewTests(TestCase):
             "api_key": "",
             "model": "gemini-exp-1206"
         })
-        resp = self.client.post(reverse("zit:api_test_ai"), payload, content_type="application/json")
+        resp = self.client.post(reverse("blame:api_test_ai"), payload, content_type="application/json")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertFalse(data["success"])
@@ -151,14 +151,14 @@ class ViewTests(TestCase):
 
     def test_staging_view_empty_right_box_until_file_selected(self):
         # When visiting /staging/ without selecting a file, file_diffs should be empty
-        resp = self.client.get(reverse("zit:staging"))
+        resp = self.client.get(reverse("blame:staging"))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.context["selected_file"], "")
         self.assertEqual(len(resp.context["file_diffs"]), 0)
         self.assertContains(resp, "No File Selected")
 
     def test_ai_code_mentor_studio_view(self):
-        resp = self.client.get(reverse("zit:ai_code_mentor"))
+        resp = self.client.get(reverse("blame:ai_code_mentor"))
         self.assertEqual(resp.status_code, 200)
         self.assertIn("file_path", resp.context)
         self.assertContains(resp, "AI Mentor Code Studio")
@@ -171,7 +171,8 @@ class ViewTests(TestCase):
             "file_path": "../../../outside.txt",
             "code": "malicious"
         })
-        resp = self.client.post(reverse("zit:api_ai_code_mentor_apply"), payload, content_type="application/json")
+        resp = self.client.post(reverse("blame:api_ai_code_mentor_apply"), payload, content_type="application/json")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertFalse(data["success"])
+

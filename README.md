@@ -126,7 +126,7 @@ Accessible from the **Smart Staging** action bar (`AI Mentor`), the 3-pane Code 
 ```text
 ┌──────────────────────────┬──────────────────────────┬──────────────────────────┐
 │      CURRENT CODE        │       CMD TERMINAL       │      SUGGESTED CODE      │
-│  zit_app/views.py        │  cmd.exe — Active Repo   │  Complete Updated Code   │
+│  blame_app/views.py        │  cmd.exe — Active Repo   │  Complete Updated Code   │
 │                          │                          │                          │
 │ 1  import os             │ C:\projects\repo> refactor │ 1  import os             │
 │ 2  from django...        │ [■ ■ ■ ■ ■] thinking...  │ 2  from django...        │
@@ -286,3 +286,4 @@ All 13 core test suites verify repository discovery, commit safety classificatio
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
+

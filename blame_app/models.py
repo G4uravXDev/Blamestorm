@@ -1,8 +1,8 @@
 from django.db import models
 
 
-class ZitConfig(models.Model):
-    """Local configuration options for zit."""
+class BlameConfig(models.Model):
+    """Local configuration options for Blamestorm."""
     gemini_api_key = models.CharField(max_length=255, blank=True, default="")
     gemini_model = models.CharField(max_length=128, default="gemini-2.5-flash")
     confirm_destructive = models.BooleanField(default=True)
@@ -13,7 +13,7 @@ class ZitConfig(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Zit Config ({self.gemini_model})"
+        return f"Blame Config ({self.gemini_model})"
 
     @classmethod
     def get_solo(cls):
@@ -21,10 +21,14 @@ class ZitConfig(models.Model):
         return obj
 
 
+# Backward-compatible alias
+ZitConfig = BlameConfig
+
+
 class WorkflowPreset(models.Model):
     """Saved custom workflows (GitHub Actions or Git Ops)."""
     name = models.CharField(max_length=120)
-    workflow_type = models.CharField(max_length=32, default="github_action")  # 'github_action' or 'git_ops'
+    workflow_type = models.CharField(max_length=32, default="github_action")
     triggers = models.CharField(max_length=255, default="push,pull_request")
     yaml_content = models.TextField(blank=True, default="")
     description = models.CharField(max_length=255, blank=True, default="")
@@ -37,7 +41,7 @@ class WorkflowPreset(models.Model):
 class AgentMessage(models.Model):
     """Persistent chat history for AI Agent mode."""
     session_id = models.CharField(max_length=64, default="default")
-    role = models.CharField(max_length=20)  # user, assistant, system, tool
+    role = models.CharField(max_length=20)
     content = models.TextField()
     command = models.CharField(max_length=500, blank=True, default="")
     command_output = models.TextField(blank=True, default="")

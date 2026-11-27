@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}AI Mentor — zit{% endblock %}
+{% block title %}AI Mentor — Blamestorm{% endblock %}
 
 {% block content %}
 <div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
@@ -13,7 +13,7 @@
     </p>
   </div>
   <div>
-    <a href="{% url 'zit:agent' %}" class="btn btn-blue btn-sm">⚡ Switch to Autonomous Agent Mode <kbd>A</kbd></a>
+    <a href="{% url 'blame:agent' %}" class="btn btn-blue btn-sm">⚡ Switch to Autonomous Agent Mode <kbd>A</kbd></a>
   </div>
 </div>
 
@@ -22,7 +22,7 @@
   <div>
     <strong>Gemini API Key Required:</strong> To unlock AI features, please configure your free Google Gemini API key.
   </div>
-  <a href="{% url 'zit:settings' %}" class="btn btn-sm">Configure in Settings →</a>
+  <a href="{% url 'blame:settings' %}" class="btn btn-sm">Configure in Settings →</a>
 </div>
 {% endif %}
 
@@ -189,3 +189,4 @@ function copyMentorResponse() {
 document.addEventListener('DOMContentLoaded', () => selectMode('explain'));
 </script>
 {% endblock %}
+

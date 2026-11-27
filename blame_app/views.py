@@ -6,7 +6,7 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 
-from .models import ZitConfig, WorkflowPreset, AgentMessage
+from .models import BlameConfig, WorkflowPreset, AgentMessage
 from .git_engine.runner import run_git, get_repo_root, is_git_repo, init_repo
 from .git_engine.status import get_status
 from .git_engine.diff import (
@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 def _get_active_repo(request):
     """Retrieve verified active repository path from session or environment."""
-    env_repo = os.environ.get("ZIT_REPO_PATH")
+    env_repo = os.environ.get("BLAME_REPO_PATH") or os.environ.get("ZIT_REPO_PATH")
     session_repo = request.session.get("current_repo_path")
     launched_repo = request.session.get("launched_repo")
 
@@ -86,14 +86,14 @@ def dashboard_view(request):
         "merge_state": merge_state,
         "is_valid": is_valid,
     }
-    return render(request, "zit/dashboard.html", context)
+    return render(request, "blame/dashboard.html", context)
 
 
 def staging_view(request):
     """Smart Staging view with unified diff and hunk actions."""
     repo_path = _get_active_repo(request)
     if not is_git_repo(repo_path):
-        return redirect("zit:dashboard")
+        return redirect("blame:dashboard")
 
     status = get_status(repo_path)
     selected_file = request.GET.get("file", "").strip()
@@ -109,7 +109,7 @@ def staging_view(request):
 
     # Secret scanning on staged files
     raw_staged = get_raw_staged_diff(repo_path)
-    config = ZitConfig.get_solo()
+    config = BlameConfig.get_solo()
     allowlist = [a.strip() for a in config.secrets_allowlist.splitlines() if a.strip()]
     secrets_found = scan_diff_content(raw_staged, allowlist=allowlist) if config.auto_scan_secrets else []
 
@@ -121,21 +121,21 @@ def staging_view(request):
         "file_diffs": file_diffs,
         "secrets_found": secrets_found,
     }
-    return render(request, "zit/staging.html", context)
+    return render(request, "blame/staging.html", context)
 
 
 def commit_view(request):
     """Guided Commit editor view with conventional commit builder and Gemini suggestions."""
     repo_path = _get_active_repo(request)
     if not is_git_repo(repo_path):
-        return redirect("zit:dashboard")
+        return redirect("blame:dashboard")
 
     status = get_status(repo_path)
     staged_diffs = get_staged_diff(repo_path)
     diffstat = get_staged_stat(repo_path)
     raw_diff = get_raw_staged_diff(repo_path)
 
-    config = ZitConfig.get_solo()
+    config = BlameConfig.get_solo()
     allowlist = [a.strip() for a in config.secrets_allowlist.splitlines() if a.strip()]
     secrets_found = scan_diff_content(raw_diff, allowlist=allowlist) if config.auto_scan_secrets else []
 
@@ -172,7 +172,7 @@ def commit_view(request):
             res = run_git(["commit", "-m", full_message], cwd=repo_path)
             if res.success:
                 messages.success(request, f"Committed successfully: {full_subject}")
-                return redirect("zit:staging")
+                return redirect("blame:staging")
             else:
                 messages.error(request, f"Commit failed: {res.stderr}")
 
@@ -183,14 +183,14 @@ def commit_view(request):
         "diffstat": diffstat,
         "secrets_found": secrets_found,
     }
-    return render(request, "zit/commit.html", context)
+    return render(request, "blame/commit.html", context)
 
 
 def branches_view(request):
     """Visual Branch manager view."""
     repo_path = _get_active_repo(request)
     if not is_git_repo(repo_path):
-        return redirect("zit:dashboard")
+        return redirect("blame:dashboard")
 
     branches = get_branches(repo_path)
     current_branch = get_current_branch(repo_path)
@@ -200,14 +200,14 @@ def branches_view(request):
         "branches": branches,
         "current_branch": current_branch,
     }
-    return render(request, "zit/branches.html", context)
+    return render(request, "blame/branches.html", context)
 
 
 def timeline_view(request):
     """Commit Timeline and visual graph view."""
     repo_path = _get_active_repo(request)
     if not is_git_repo(repo_path):
-        return redirect("zit:dashboard")
+        return redirect("blame:dashboard")
 
     search_query = request.GET.get("q", "").strip()
     selected_hash = request.GET.get("commit", "").strip()
@@ -229,14 +229,14 @@ def timeline_view(request):
         "commit_detail": commit_detail,
         "selected_hash": selected_hash,
     }
-    return render(request, "zit/timeline.html", context)
+    return render(request, "blame/timeline.html", context)
 
 
 def time_travel_view(request):
     """Safe Reset, Restore, and Tag management."""
     repo_path = _get_active_repo(request)
     if not is_git_repo(repo_path):
-        return redirect("zit:dashboard")
+        return redirect("blame:dashboard")
 
     recent_commits = get_commit_history(max_count=15, cwd=repo_path)
     tags = get_tags(repo_path)
@@ -246,14 +246,14 @@ def time_travel_view(request):
         "recent_commits": recent_commits,
         "tags": tags,
     }
-    return render(request, "zit/time_travel.html", context)
+    return render(request, "blame/time_travel.html", context)
 
 
 def reflog_view(request):
     """Reflog Recovery view."""
     repo_path = _get_active_repo(request)
     if not is_git_repo(repo_path):
-        return redirect("zit:dashboard")
+        return redirect("blame:dashboard")
 
     reflog_entries = get_reflog(max_count=60, cwd=repo_path)
 
@@ -261,14 +261,14 @@ def reflog_view(request):
         "active_view": "reflog",
         "reflog_entries": reflog_entries,
     }
-    return render(request, "zit/reflog.html", context)
+    return render(request, "blame/reflog.html", context)
 
 
 def stash_view(request):
     """Stash manager view."""
     repo_path = _get_active_repo(request)
     if not is_git_repo(repo_path):
-        return redirect("zit:dashboard")
+        return redirect("blame:dashboard")
 
     stashes = get_stashes(repo_path)
     selected_idx = request.GET.get("idx")
@@ -285,14 +285,14 @@ def stash_view(request):
         "selected_idx": selected_idx,
         "stash_diffs": stash_diffs,
     }
-    return render(request, "zit/stash.html", context)
+    return render(request, "blame/stash.html", context)
 
 
 def merge_resolve_view(request):
     """Merge conflict resolution view."""
     repo_path = _get_active_repo(request)
     if not is_git_repo(repo_path):
-        return redirect("zit:dashboard")
+        return redirect("blame:dashboard")
 
     merge_state = get_merge_state(repo_path)
     conflicted_files = get_conflicted_files(repo_path)
@@ -312,14 +312,14 @@ def merge_resolve_view(request):
         "selected_file": selected_file,
         "conflict_data": conflict_data,
     }
-    return render(request, "zit/merge_resolve.html", context)
+    return render(request, "blame/merge_resolve.html", context)
 
 
 def bisect_view(request):
     """Interactive Git Bisect view."""
     repo_path = _get_active_repo(request)
     if not is_git_repo(repo_path):
-        return redirect("zit:dashboard")
+        return redirect("blame:dashboard")
 
     status = get_bisect_status(repo_path)
     recent_commits = get_commit_history(max_count=20, cwd=repo_path)
@@ -329,14 +329,14 @@ def bisect_view(request):
         "bisect_status": status,
         "recent_commits": recent_commits,
     }
-    return render(request, "zit/bisect.html", context)
+    return render(request, "blame/bisect.html", context)
 
 
 def cherry_pick_view(request):
     """Cherry pick commits from other branches."""
     repo_path = _get_active_repo(request)
     if not is_git_repo(repo_path):
-        return redirect("zit:dashboard")
+        return redirect("blame:dashboard")
 
     branches = get_branches(repo_path)
     selected_branch = request.GET.get("branch", "")
@@ -359,7 +359,7 @@ def cherry_pick_view(request):
         "selected_hash": selected_hash,
         "commit_diffs": commit_diffs,
     }
-    return render(request, "zit/cherry_pick.html", context)
+    return render(request, "blame/cherry_pick.html", context)
 
 
 def workflow_builder_view(request):
@@ -372,14 +372,14 @@ def workflow_builder_view(request):
         "presets": presets,
         "repo_path": repo_path,
     }
-    return render(request, "zit/workflow_builder.html", context)
+    return render(request, "blame/workflow_builder.html", context)
 
 
 def github_view(request):
     """GitHub integration view (remotes, sync, pull requests)."""
     repo_path = _get_active_repo(request)
     if not is_git_repo(repo_path):
-        return redirect("zit:dashboard")
+        return redirect("blame:dashboard")
 
     remotes = get_remotes(repo_path)
     status = get_status(repo_path)
@@ -389,7 +389,7 @@ def github_view(request):
         "remotes": remotes,
         "status": status,
     }
-    return render(request, "zit/github.html", context)
+    return render(request, "blame/github.html", context)
 
 
 def ai_mentor_view(request):
@@ -403,14 +403,14 @@ def ai_mentor_view(request):
         "status": status,
         "recent_commits": recent_commits,
     }
-    return render(request, "zit/ai_mentor.html", context)
+    return render(request, "blame/ai_mentor.html", context)
 
 
 def ai_code_studio_view(request):
     """3-Pane AI Mentor Code Studio: Current Code | AI Mentor Terminal | Suggested Code."""
     repo_path = _get_active_repo(request)
     if not is_git_repo(repo_path):
-        return redirect("zit:dashboard")
+        return redirect("blame:dashboard")
 
     status = get_status(repo_path)
     file_path = request.GET.get("file", "").strip()
@@ -467,7 +467,7 @@ def ai_code_studio_view(request):
         "file_exists": file_exists,
         "file_error": file_error,
     }
-    return render(request, "zit/code_mentor.html", context)
+    return render(request, "blame/code_mentor.html", context)
 
 
 def agent_view(request):
@@ -480,7 +480,7 @@ def agent_view(request):
         "messages": messages_list,
         "repo_path": repo_path,
     }
-    return render(request, "zit/agent.html", context)
+    return render(request, "blame/agent.html", context)
 
 
 STANDARD_GEMINI_MODELS = [
@@ -495,7 +495,7 @@ STANDARD_MODEL_KEYS = [k for k, _ in STANDARD_GEMINI_MODELS]
 
 def settings_view(request):
     """Application and Gemini API settings view."""
-    config = ZitConfig.get_solo()
+    config = BlameConfig.get_solo()
     repo_path = _get_active_repo(request)
 
     if request.method == "POST":
@@ -528,7 +528,7 @@ def settings_view(request):
             request.session["current_repo_path"] = os.path.abspath(new_repo)
 
         messages.success(request, f"Settings updated successfully (Model: {gemini_model}).")
-        return redirect("zit:settings")
+        return redirect("blame:settings")
 
     is_custom_model = bool(config.gemini_model and config.gemini_model not in STANDARD_MODEL_KEYS)
 
@@ -539,7 +539,7 @@ def settings_view(request):
         "standard_models": STANDARD_GEMINI_MODELS,
         "is_custom_model": is_custom_model,
     }
-    return render(request, "zit/settings.html", context)
+    return render(request, "blame/settings.html", context)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -1043,7 +1043,7 @@ def api_secret_scan(request):
     """Run secret scanner on staged or working directory changes."""
     repo_path = _get_active_repo(request)
     diff = get_raw_staged_diff(repo_path) or get_raw_unstaged_diff(repo_path)
-    config = ZitConfig.get_solo()
+    config = BlameConfig.get_solo()
     allowlist = [a.strip() for a in config.secrets_allowlist.splitlines() if a.strip()]
     findings = scan_diff_content(diff, allowlist=allowlist)
     return JsonResponse({
@@ -1142,3 +1142,4 @@ def api_save_workflow(request):
         return JsonResponse({"success": True, "path": full_path})
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)})
+

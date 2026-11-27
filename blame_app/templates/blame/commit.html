@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Guided Commit — zit{% endblock %}
+{% block title %}Guided Commit — Blamestorm{% endblock %}
 
 {% block content %}
 <div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
@@ -11,7 +11,7 @@
     </p>
   </div>
   <div>
-    <a href="{% url 'zit:staging' %}" class="btn btn-sm">← Back to Staging <kbd>s</kbd></a>
+    <a href="{% url 'blame:staging' %}" class="btn btn-sm">← Back to Staging <kbd>s</kbd></a>
   </div>
 </div>
 
@@ -20,7 +20,7 @@
   <div>
     <strong>No staged changes!</strong> You cannot commit without staging changes first.
   </div>
-  <a href="{% url 'zit:staging' %}" class="btn btn-primary btn-sm">Go to Staging <kbd>s</kbd></a>
+  <a href="{% url 'blame:staging' %}" class="btn btn-primary btn-sm">Go to Staging <kbd>s</kbd></a>
 </div>
 {% endif %}
 
@@ -66,7 +66,7 @@
         <div id="aiSuggestionsList" style="display:flex; flex-direction:column; gap:6px;"></div>
       </div>
 
-      <form method="POST" action="{% url 'zit:commit' %}">
+      <form method="POST" action="{% url 'blame:commit' %}">
         {% csrf_token %}
 
         <div class="grid-2">
@@ -155,7 +155,7 @@
             </div>
             <h4 style="color: var(--text-muted); font-size: 14px; margin-bottom: 6px; font-weight: 600;">No Staged Statistics Available</h4>
             <p style="font-size: 12px; max-width: 280px; line-height: 1.5;">
-              Stage files in <a href="{% url 'zit:staging' %}" style="color: var(--accent-blue-bright);">Smart Staging</a> to see diff statistics and file change metrics here.
+              Stage files in <a href="{% url 'blame:staging' %}" style="color: var(--accent-blue-bright);">Smart Staging</a> to see diff statistics and file change metrics here.
             </p>
           </div>
         {% endif %}
@@ -254,3 +254,4 @@ function applySuggestion(s) {
 }
 </script>
 {% endblock %}
+

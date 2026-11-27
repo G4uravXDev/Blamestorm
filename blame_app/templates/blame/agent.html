@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Autonomous Agent Mode — zit{% endblock %}
+{% block title %}Autonomous Agent Mode — Blamestorm{% endblock %}
 
 {% block content %}
 <div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
@@ -30,7 +30,7 @@
   <div>
     <strong>Gemini API Key Required:</strong> To enable Autonomous Agent Mode, please configure your Gemini API key.
   </div>
-  <a href="{% url 'zit:settings' %}" class="btn btn-sm">Configure in Settings →</a>
+  <a href="{% url 'blame:settings' %}" class="btn btn-sm">Configure in Settings →</a>
 </div>
 {% endif %}
 
@@ -54,7 +54,7 @@
         <use href="#icon-check"></use>
       </svg>Authorize &amp; Execute
     </button>
-    <a href="{% url 'zit:commit' %}" class="btn btn-sm" id="btnGoToCommit" style="display:none;">
+    <a href="{% url 'blame:commit' %}" class="btn btn-sm" id="btnGoToCommit" style="display:none;">
       <svg class="zit-icon zit-icon-xs" style="margin-right:4px;">
         <use href="#icon-commit"></use>
       </svg>Open Commit Editor
