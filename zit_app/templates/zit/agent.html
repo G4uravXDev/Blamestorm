@@ -6,7 +6,9 @@
 <div style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
   <div>
     <h1 style="font-size:22px; font-weight:700; color:var(--accent-cyan); display:flex; align-items:center; gap:8px;">
-      <svg class="zit-icon zit-icon-md"><use href="#icon-agent"></use></svg>
+      <svg class="zit-icon zit-icon-md">
+        <use href="#icon-agent"></use>
+      </svg>
       <span>Autonomous Git Agent Mode</span>
     </h1>
     <p style="font-size:13px; color:var(--text-muted);">
@@ -16,7 +18,9 @@
   </div>
   <div style="display:flex; gap:8px;">
     <button class="btn btn-sm" onclick="resetAgentConversation()">
-      <svg class="zit-icon zit-icon-xs" style="margin-right:4px;"><use href="#icon-trash"></use></svg>Clear Chat
+      <svg class="zit-icon zit-icon-xs" style="margin-right:4px;">
+        <use href="#icon-trash"></use>
+      </svg>Clear Chat
     </button>
   </div>
 </div>
@@ -35,7 +39,9 @@
   style="display:none; margin-bottom:16px; align-items:center; justify-content:space-between;">
   <div>
     <strong id="approvalTitle">
-      <svg class="zit-icon zit-icon-sm" style="margin-right:4px; color:var(--accent-yellow);"><use href="#icon-alert"></use></svg>User Authorization Required:
+      <svg class="zit-icon zit-icon-sm" style="margin-right:4px; color:var(--accent-yellow);">
+        <use href="#icon-alert"></use>
+      </svg>User Authorization Required:
     </strong>
     <div style="margin-top:4px;">
       The AI agent planned: <code id="approvalCmd" style="font-size:13px; font-weight:700; color:#fff;">git ...</code>
@@ -44,13 +50,19 @@
   </div>
   <div style="display:flex; gap:8px;">
     <button class="btn btn-primary btn-sm" id="btnApproveAction" onclick="approveCommand()">
-      <svg class="zit-icon zit-icon-xs" style="margin-right:4px;"><use href="#icon-check"></use></svg>Authorize &amp; Execute
+      <svg class="zit-icon zit-icon-xs" style="margin-right:4px;">
+        <use href="#icon-check"></use>
+      </svg>Authorize &amp; Execute
     </button>
     <a href="{% url 'zit:commit' %}" class="btn btn-sm" id="btnGoToCommit" style="display:none;">
-      <svg class="zit-icon zit-icon-xs" style="margin-right:4px;"><use href="#icon-commit"></use></svg>Open Commit Editor
+      <svg class="zit-icon zit-icon-xs" style="margin-right:4px;">
+        <use href="#icon-commit"></use>
+      </svg>Open Commit Editor
     </a>
     <button class="btn btn-sm" onclick="rejectCommand()">
-      <svg class="zit-icon zit-icon-xs" style="margin-right:4px;"><use href="#icon-close"></use></svg>Reject / Stop
+      <svg class="zit-icon zit-icon-xs" style="margin-right:4px;">
+        <use href="#icon-close"></use>
+      </svg>Reject / Stop
     </button>
   </div>
 </div>
@@ -60,8 +72,11 @@
   <div id="chatMessages" class="chat-messages">
     <!-- Welcome message -->
     <div class="chat-bubble chat-agent">
-      <div style="font-weight:700; color:var(--accent-cyan); margin-bottom:4px; display:flex; align-items:center; gap:6px;">
-        <svg class="zit-icon zit-icon-sm"><use href="#icon-agent"></use></svg>
+      <div
+        style="font-weight:700; color:var(--accent-cyan); margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+        <svg class="zit-icon zit-icon-sm">
+          <use href="#icon-agent"></use>
+        </svg>
         <span>Blamestorm Git Agent</span>
       </div>
       <div>
@@ -84,8 +99,11 @@
     </div>
     {% elif msg.role == 'assistant' %}
     <div class="chat-bubble chat-agent">
-      <div style="font-size:11px; color:var(--accent-green-bright); margin-bottom:2px; font-weight:600; display:flex; align-items:center; gap:5px;">
-        <svg class="zit-icon zit-icon-xs"><use href="#icon-agent"></use></svg>
+      <div
+        style="font-size:11px; color:var(--accent-green-bright); margin-bottom:2px; font-weight:600; display:flex; align-items:center; gap:5px;">
+        <svg class="zit-icon zit-icon-xs">
+          <use href="#icon-agent"></use>
+        </svg>
         <span>Blamestorm Agent</span>
       </div>
       <div style="white-space:pre-wrap;">{{ msg.content }}</div>
@@ -112,7 +130,9 @@
       placeholder="Describe git task... (e.g. 'pull latest main and rebase my feature branch')"
       onkeydown="if(event.key==='Enter') sendAgentMessage();">
     <button class="btn btn-primary" id="btnSendAgent" onclick="sendAgentMessage()">
-      Send <svg class="zit-icon zit-icon-xs" style="margin-left:4px;"><use href="#icon-zap"></use></svg>
+      Send <svg class="zit-icon zit-icon-xs" style="margin-left:4px;">
+        <use href="#icon-zap"></use>
+      </svg>
     </button>
   </div>
 </div>

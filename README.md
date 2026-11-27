@@ -16,7 +16,31 @@
 
 ---
 
-## 🚀 Quick Start
+## 📦 Standalone Executable (Zero Dependencies)
+
+Blamestorm is available as a single downloadable executable (`blamestorm.exe`) that requires **NO Python, NO virtual environment, and NO package installation**:
+
+### 1. Download & Run
+- The compiled standalone executable is ready in `dist/blamestorm.exe`.
+- Move `blamestorm.exe` into any folder in your `PATH` (or run `install_cli.bat` to install it globally to your user `WindowsApps` folder automatically).
+
+### 2. Use in Any Repository
+Open any terminal (CMD, PowerShell, Git Bash) inside **any Git repository** on your computer and run:
+
+```bash
+# Print all details of the active repository in terminal and exit:
+blamestorm --info
+
+# Print active repo details, launch local web studio, and open browser:
+blamestorm
+
+# Target a specific repository folder from anywhere:
+blamestorm --repo /path/to/any-repo --info
+```
+
+---
+
+## 🚀 Developer / Source Quick Start
 
 ### 1. Prerequisites
 - Python 3.10+

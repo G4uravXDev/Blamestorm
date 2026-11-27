@@ -1,8 +1,7 @@
 @echo off
 title Blamestorm — AI Git Assistant
-echo =========================================================
-echo   Blamestorm — AI-Powered Git Assistant (Django Edition)
-echo =========================================================
-echo Starting web app...
-python blamestorm.py %*
-pause
+if exist "%~dp0dist\blamestorm.exe" (
+    "%~dp0dist\blamestorm.exe" %*
+) else (
+    python "%~dp0blamestorm.py" %*
+)

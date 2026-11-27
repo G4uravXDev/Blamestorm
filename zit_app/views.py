@@ -48,14 +48,23 @@ logger = logging.getLogger(__name__)
 
 
 def _get_active_repo(request):
-    """Retrieve verified active repository path from session or default."""
-    repo = request.session.get("current_repo_path")
-    if not repo or not os.path.exists(repo):
+    """Retrieve verified active repository path from session or environment."""
+    env_repo = os.environ.get("ZIT_REPO_PATH")
+    session_repo = request.session.get("current_repo_path")
+    launched_repo = request.session.get("launched_repo")
+
+    if env_repo and os.path.exists(env_repo) and launched_repo != env_repo:
+        repo = env_repo
+        request.session["launched_repo"] = env_repo
+        request.session["current_repo_path"] = env_repo
+    elif session_repo and os.path.exists(session_repo):
+        repo = session_repo
+    elif env_repo and os.path.exists(env_repo):
+        repo = env_repo
+        request.session["current_repo_path"] = env_repo
+    else:
         cwd = os.getcwd()
-        if is_git_repo(cwd):
-            repo = get_repo_root(cwd) or cwd
-        else:
-            repo = cwd
+        repo = get_repo_root(cwd) or cwd if is_git_repo(cwd) else cwd
         request.session["current_repo_path"] = repo
     return repo
 

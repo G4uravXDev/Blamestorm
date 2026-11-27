@@ -5,18 +5,23 @@ from .git_engine.status import get_status
 
 def zit_context(request):
     """Context processor providing repository and app status to all templates."""
-    # Find active repo path from session or default
+    # Find active repo path from session or environment
+    env_repo = os.environ.get("ZIT_REPO_PATH")
     session_repo = request.session.get("current_repo_path")
-    
-    if session_repo and os.path.exists(session_repo) and is_git_repo(session_repo):
+    launched_repo = request.session.get("launched_repo")
+
+    if env_repo and os.path.exists(env_repo) and launched_repo != env_repo:
+        active_repo = env_repo
+        request.session["launched_repo"] = env_repo
+        request.session["current_repo_path"] = env_repo
+    elif session_repo and os.path.exists(session_repo):
         active_repo = session_repo
+    elif env_repo and os.path.exists(env_repo):
+        active_repo = env_repo
+        request.session["current_repo_path"] = env_repo
     else:
-        # Check current working directory
         cwd = os.getcwd()
-        if is_git_repo(cwd):
-            active_repo = get_repo_root(cwd) or cwd
-        else:
-            active_repo = cwd
+        active_repo = get_repo_root(cwd) or cwd if is_git_repo(cwd) else cwd
         request.session["current_repo_path"] = active_repo
 
     repo_is_valid = is_git_repo(active_repo)

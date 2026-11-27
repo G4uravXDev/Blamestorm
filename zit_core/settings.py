@@ -4,8 +4,18 @@ Django settings for zit_core project.
 
 from pathlib import Path
 import os
+import sys
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+# Detect if running in PyInstaller compiled executable
+if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+    BASE_DIR = Path(sys._MEIPASS)
+    # Store SQLite DB in user home directory so settings & API keys persist across runs/repos
+    DATA_DIR = Path.home() / ".blamestorm"
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    DB_PATH = Path(os.environ.get("BLAMESTORM_DB_PATH", str(DATA_DIR / "blamestorm.sqlite3")))
+else:
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    DB_PATH = Path(os.environ.get("BLAMESTORM_DB_PATH", str(BASE_DIR / "db.sqlite3")))
 
 SECRET_KEY = "django-insecure-0b84&by@1r9)+fwz2wdpl29*0awu1awrmkqj)8fck8k(u@xtxk"
 
@@ -56,7 +66,7 @@ WSGI_APPLICATION = "zit_core.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": DB_PATH,
     }
 }
 
